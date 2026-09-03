@@ -22,8 +22,6 @@ from jwt.exceptions import InvalidTokenError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
-security = HTTPBearer()
-
 app = FastAPI()
 
 app.add_middleware(
@@ -57,27 +55,6 @@ def inicio():
     return {"mensagem": "Central de Chamados funcionando!"}
 
 
-@app.post("/usuarios")
-def criar_usuario(
-    usuario: UsuarioCriar,
-    db: Session = Depends(get_db)
-):
-
-    novo_usuario = Usuario(
-        nome=usuario.nome,
-        email=usuario.email,
-        senha=password_hash.hash(usuario.senha)
-    )
-
-    db.add(novo_usuario)
-    db.commit()
-    db.refresh(novo_usuario)
-
-    return {
-        "id": novo_usuario.id,
-        "nome": novo_usuario.nome,
-        "email": novo_usuario.email
-    }
 password_hash = PasswordHash.recommended()
 
 
@@ -126,6 +103,8 @@ def criar_token(dados: dict):
     )
 
     return token
+
+
 def validar_token(
     credenciais: HTTPAuthorizationCredentials = Depends(security)
 ):
@@ -145,6 +124,30 @@ def validar_token(
             status_code=401,
             detail="Token inválido ou expirado"
         )
+
+
+@app.post("/usuarios")
+def criar_usuario(
+    usuario: UsuarioCriar,
+    usuario_token: dict = Depends(validar_token),
+    db: Session = Depends(get_db)
+):
+    novo_usuario = models.Usuario(
+        nome=usuario.nome,
+        email=usuario.email,
+        senha=password_hash.hash(usuario.senha),
+        ativo=True
+    )
+
+    db.add(novo_usuario)
+    db.commit()
+    db.refresh(novo_usuario)
+
+    return {
+        "id": novo_usuario.id,
+        "nome": novo_usuario.nome,
+        "email": novo_usuario.email
+    }
 
 @app.post("/login")
 def login(
