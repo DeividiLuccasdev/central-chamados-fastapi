@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Novo Chamado - Central de Chamados</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- MENU LATERAL -->
+    <aside class="sidebar">
+
+        <h2>Central de Chamados</h2>
+
+        <div class="usuario-logado">
+            👤 {{ request.session.get("usuario_nome") }}
+        </div>
+
+        <nav>
+            <a href="/dashboard">🏠 Dashboard</a>
+            <a href="/chamados-web">🎫 Chamados</a>
+            <a href="/novo-chamado">➕ Novo Chamado</a>
+            <a href="/usuarios-web">👤 Usuários</a>
+            <a href="/logout">🚪 Sair</a>
+        </nav>
+
+    </aside>
+
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="conteudo">
+
+        <div class="topo">
+
+            <div>
+                <h1>Novo Chamado</h1>
+                <p>Preencha os dados para abrir um novo chamado.</p>
+            </div>
+
+        </div>
+
+
+        <div class="detalhes-chamado">
+
+            <form
+                method="POST"
+                action="/novo-chamado"
+            >
+
+                <label for="titulo">
+                    Título
+                </label>
+
+                <input
+                    type="text"
+                    id="titulo"
+                    name="titulo"
+                    placeholder="Digite o título do chamado"
+                    required
+                >
+
+
+                <label for="descricao">
+                    Descrição
+                </label>
+
+                <textarea
+                    id="descricao"
+                    name="descricao"
+                    placeholder="Descreva detalhadamente o problema"
+                    required
+                ></textarea>
+
+
+                <label for="prioridade">
+                    Prioridade
+                </label>
+
+                <select
+                    id="prioridade"
+                    name="prioridade"
+                    required
+                >
+                    <option value="baixa">
+                        Baixa
+                    </option>
+
+                    <option value="media" selected>
+                        Média
+                    </option>
+
+                    <option value="alta">
+                        Alta
+                    </option>
+                </select>
+
+
+                <button type="submit">
+                    Criar Chamado
+                </button>
+
+            </form>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

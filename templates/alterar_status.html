@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Alterar Status - Central de Chamados</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- MENU LATERAL -->
+    <aside class="sidebar">
+
+        <h2>Central de Chamados</h2>
+
+        <div class="usuario-logado">
+            👤 {{ request.session.get("usuario_nome") }}
+        </div>
+
+        <nav>
+            <a href="/dashboard">🏠 Dashboard</a>
+            <a href="/chamados-web">🎫 Chamados</a>
+            <a href="/novo-chamado">➕ Novo Chamado</a>
+            <a href="/usuarios-web">👤 Usuários</a>
+            <a href="/logout">🚪 Sair</a>
+        </nav>
+
+    </aside>
+
+
+    <!-- CONTEÚDO -->
+    <main class="conteudo">
+
+        <div class="topo">
+
+            <div>
+                <h1>Alterar Status</h1>
+                <p>Atualize o andamento do chamado #{{ chamado.id }}</p>
+            </div>
+
+        </div>
+
+
+        <div class="detalhes-chamado">
+
+            <p>
+                <strong>Chamado:</strong>
+                #{{ chamado.id }} - {{ chamado.titulo }}
+            </p>
+
+            <p>
+                <strong>Status atual:</strong>
+
+                <span class="badge status-{{ chamado.status|lower|replace(' ', '-') }}">
+                    {{ chamado.status }}
+                </span>
+            </p>
+
+
+            <form
+                method="POST"
+                action="/chamados/{{ chamado.id }}/status"
+            >
+
+                <label for="status">
+                    Novo status
+                </label>
+
+                <select
+                    id="status"
+                    name="status"
+                    required
+                >
+
+                    <option
+                        value="aberto"
+                        {% if chamado.status == "aberto" %}selected{% endif %}
+                    >
+                        Aberto
+                    </option>
+
+                    <option
+                        value="em andamento"
+                        {% if chamado.status == "em andamento" %}selected{% endif %}
+                    >
+                        Em andamento
+                    </option>
+
+                    <option
+                        value="resolvido"
+                        {% if chamado.status == "resolvido" %}selected{% endif %}
+                    >
+                        Resolvido
+                    </option>
+
+                </select>
+
+
+                <button type="submit">
+                    Salvar Status
+                </button>
+
+            </form>
+
+
+            <div class="acoes-chamado">
+
+                <a
+                    href="/chamados-web"
+                    class="btn-ver"
+                >
+                    ← Voltar para Chamados
+                </a>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

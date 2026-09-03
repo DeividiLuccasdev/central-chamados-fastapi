@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Chamados - Central de Chamados</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <!-- MENU LATERAL -->
+        <aside class="sidebar">
+
+            <h2>Central de Chamados</h2>
+            <div class="usuario-logado">
+    👤 {{ request.session.get("usuario_nome") }}
+</div>
+
+          <nav>
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/chamados-web">🎫 Chamados</a>
+    <a href="/novo-chamado">➕ Novo Chamado</a>
+    <a href="/usuarios-web">👤 Usuários</a>
+    <a href="/logout">🚪 Sair</a>
+</nav>
+
+        </aside>
+
+
+        <!-- CONTEÚDO -->
+        <main class="conteudo">
+
+            <div class="topo">
+
+                <div>
+                    <h1>Chamados</h1>
+                    <p>Gerenciamento de todos os chamados</p>
+                </div>
+
+                <a href="/novo-chamado" class="btn-novo">
+                    + Novo Chamado
+                </a>
+
+            </div>
+<form method="GET" action="/chamados-web" class="filtros-chamados">
+
+    <div class="autocomplete-chamados">
+
+  
+    <input
+        type="text"
+        id="busca"
+        name="busca"
+        placeholder="Pesquisar chamado..."
+        autocomplete="off"
+        value="{{ request.query_params.get('busca', '') }}"
+    >
+
+        <div
+            id="sugestoes-chamados"
+            class="sugestoes-chamados">
+        </div>
+
+        <div id="lista-titulos-chamados" style="display: none;">
+            {% for titulo in titulos_chamados %}
+                <span class="titulo-autocomplete">
+                    {{ titulo }}
+                </span>
+            {% endfor %}
+        </div>
+
+    </div>
+
+
+<select name="status">
+
+    <option value="" {% if not status %}selected{% endif %}>
+        Todos os status
+    </option>
+
+    <option value="aberto" {% if status == "aberto" %}selected{% endif %}>
+        Aberto
+    </option>
+
+    <option value="em andamento" {% if status == "em andamento" %}selected{% endif %}>
+        Em andamento
+    </option>
+
+    <option value="resolvido" {% if status == "resolvido" %}selected{% endif %}>
+        Resolvido
+    </option>
+
+</select>
+
+<select name="prioridade">
+    <option value="">Todas as prioridades</option>
+    <option value="baixa">Baixa</option>
+    <option value="media">Média</option>
+    <option value="alta">Alta</option>
+</select>
+
+    <button type="submit">
+        Filtrar
+    </button>
+
+    <a href="/chamados-web" class="btn-limpar-filtro">
+        Limpar
+    </a>
+
+</form>
+
+
+            <div class="painel-clientes">
+
+                <h2>Todos os Chamados</h2>
+   <table class="tabela-chamados">
+
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+
+
+
+    <tbody>
+
+        {% for chamado in chamados %}
+
+        <tr>
+
+            <td>#{{ chamado.id }}</td>
+
+            <td>{{ chamado.titulo }}</td>
+
+            <td>
+                <span class="badge prioridade-{{ chamado.prioridade|lower }}">
+                    {{ chamado.prioridade }}
+                </span>
+            </td>
+
+            <td>
+                <span class="badge status-{{ chamado.status|lower|replace(' ', '-') }}">
+                    {{ chamado.status }}
+                </span>
+            </td>
+
+            <td>
+                {% if chamado.data_criacao %}
+                    {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                {% endif %}
+            </td>
+
+            <td class="acoes-chamado">
+
+                <a
+                    href="/chamados/{{ chamado.id }}/ver"
+                    class="btn-ver"
+                >
+                    Ver
+                </a>
+
+                <a
+                    href="/chamados/{{ chamado.id }}/status"
+                    class="btn-status"
+                >
+                    Alterar Status
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+    
+</table>
+
+</div>       
+</main>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const input = document.getElementById("busca");
+    const sugestoes = document.getElementById("sugestoes-chamados");
+    const titulos = document.querySelectorAll(".titulo-autocomplete");
+
+    input.addEventListener("input", function () {
+
+        const texto = input.value.toLowerCase().trim();
+
+        sugestoes.innerHTML = "";
+
+        if (texto === "") {
+            sugestoes.style.display = "none";
+            return;
+        }
+
+        titulos.forEach(function (item) {
+
+            const titulo = item.textContent.trim();
+
+            if (titulo.toLowerCase().includes(texto)) {
+
+                const opcao = document.createElement("div");
+
+                opcao.textContent = titulo;
+
+                opcao.addEventListener("click", function () {
+
+                    input.value = titulo;
+
+                    sugestoes.innerHTML = "";
+                    sugestoes.style.display = "none";
+
+                    input.closest("form").submit();
+                });
+
+                sugestoes.appendChild(opcao);
+            }
+
+        });
+
+        if (sugestoes.children.length > 0) {
+            sugestoes.style.display = "block";
+        } else {
+            sugestoes.style.display = "none";
+        }
+
+    });
+
+});
+</script>
+
+</body>
+</html>     

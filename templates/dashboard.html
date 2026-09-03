@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Central de Chamados</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', path='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <h2>Central de Chamados</h2>
+            <div class="usuario-logado">
+    👤 {{ request.session.get("usuario_nome") }}
+</div>
+
+ <nav>
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/chamados-web">🎫 Chamados</a>
+    <a href="/novo-chamado">➕ Novo Chamado</a>
+    <a href="/usuarios-web">👤 Usuários</a>
+    <a href="/logout">🚪 Sair</a>
+</nav>
+        </aside>
+
+        <main class="conteudo">
+
+            <div class="topo">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Gerenciamento da Central de Chamados</p>
+                </div>
+
+                <a href="/novo-chamado" class="btn-novo">
+                    + Novo Chamado
+                </a>
+            </div>
+
+<div class="cards-dashboard">
+
+    <div class="card card-azul">
+        <div class="card-icon">🎫</div>
+
+        <div class="card-info">
+            <h3>Total de Chamados</h3>
+            <p>{{ total }}</p>
+            <span>Chamados cadastrados</span>
+        </div>
+    </div>
+
+    <div class="card card-vermelho">
+        <div class="card-icon">⚠️</div>
+
+        <div class="card-info">
+            <h3>Abertos</h3>
+            <p>{{ abertos }}</p>
+            <span>Aguardando atendimento</span>
+        </div>
+    </div>
+
+    <div class="card card-laranja">
+        <div class="card-icon">🔧</div>
+
+        <div class="card-info">
+            <h3>Em andamento</h3>
+            <p>{{ em_andamento }}</p>
+            <span>Em atendimento</span>
+        </div>
+    </div>
+
+    <div class="card card-verde">
+        <div class="card-icon">✓</div>
+
+        <div class="card-info">
+            <h3>Resolvidos</h3>
+            <p>{{ resolvidos }}</p>
+            <span>Chamados finalizados</span>
+        </div>
+    </div>
+
+</div>
+<section class="chamados-recentes">
+
+    <div class="titulo-tabela">
+        <h2>Chamados Recentes</h2>
+    </div>
+
+   <table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+
+    <tbody>
+            {% for chamado in chamados %}
+            <tr>
+                <td>#{{ chamado.id }}</td>
+
+                <td>{{ chamado.titulo }}</td>
+
+                <td>
+                    <span class="badge prioridade-{{ chamado.prioridade|lower }}">
+                                        {{ chamado.prioridade }}
+                        </span>
+                </td>
+
+            <td>
+    <span class="badge status-{{ chamado.status|lower|replace(' ', '-') }}">
+        {{ chamado.status }}
+    </span>
+        </td>
+
+                <td>
+                    {% if chamado.data_criacao %}
+                        {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                    {% endif %}
+                </td>
+
+               <td class="acoes-chamado">
+
+    <a
+        href="/chamados/{{ chamado.id }}/ver"
+        class="btn-ver"
+    >
+        Ver
+    </a>
+
+    <a
+        href="/chamados/{{ chamado.id }}/status"
+        class="btn-status"
+    >
+        Alterar Status
+    </a>
+
+</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if not chamados %}
+        <p>Nenhum chamado cadastrado.</p>
+    {% endif %}
+
+</section>
+
+</body>
+
+</html>

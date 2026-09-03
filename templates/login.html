@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login - Central de Chamados</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body class="pagina-login">
+
+    <div class="detalhes-chamado login-card">
+
+        <div class="login-cabecalho">
+
+            <div class="login-icone">
+                🎫
+            </div>
+
+            <h1>Central de Chamados</h1>
+
+            <p>
+                Acesse sua conta para gerenciar os chamados.
+            </p>
+
+        </div>
+
+
+        {% if erro %}
+
+            <div class="erro-login">
+                ⚠️ {{ erro }}
+            </div>
+
+        {% endif %}
+
+
+<form
+    method="POST"
+    action="/login-web"
+>
+
+    <label for="email">
+        E-mail
+    </label>
+
+    <div class="input-com-icone">
+        <span class="icone-esquerda">✉</span>
+        <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Digite seu e-mail"
+            required
+        >
+    </div>
+
+<label for="senha">
+    Senha
+
+
+<div class="campo-senha">
+
+    <span class="icone-campo">🔒</span>
+
+    <input
+        type="password"
+        id="senha"
+        name="senha"
+        placeholder="Digite sua senha"
+        autocomplete="current-password"
+        required
+    >
+
+    <button
+        type="button"
+        class="btn-olho"
+        onclick="mostrarSenha()"
+        aria-label="Mostrar ou ocultar senha"
+    >
+        👁
+    </button>
+
+</div>
+
+    <button type="submit">
+        Entrar
+    </button>
+
+</form>
+
+
+        <p class="login-rodape">
+            Sistema de gerenciamento de chamados
+        </p>
+
+    </div>
+<script>
+    function toggleSenha() {
+        const campoSenha = document.getElementById("senha");
+        const botaoOlho = document.querySelector(".btn-olho");
+
+        if (campoSenha.type === "password") {
+            campoSenha.type = "text";
+            botaoOlho.textContent = "🙈";
+        } else {
+            campoSenha.type = "password";
+            botaoOlho.textContent = "👁";
+        }
+    }
+</script>
+<script>
+function mostrarSenha() {
+    const senha = document.getElementById("senha");
+
+    if (senha.type === "password") {
+        senha.type = "text";
+    } else {
+        senha.type = "password";
+    }
+}
+</script>
+</body>
+
+</html>

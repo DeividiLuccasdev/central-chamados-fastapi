@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Detalhes do Chamado - Central de Chamados</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- MENU LATERAL -->
+    <aside class="sidebar">
+
+        <h2>Central de Chamados</h2>
+
+        <div class="usuario-logado">
+            👤 {{ request.session.get("usuario_nome") }}
+        </div>
+
+        <nav>
+            <a href="/dashboard">🏠 Dashboard</a>
+            <a href="/chamados-web">🎫 Chamados</a>
+            <a href="/novo-chamado">➕ Novo Chamado</a>
+            <a href="/usuarios-web">👤 Usuários</a>
+            <a href="/logout">🚪 Sair</a>
+        </nav>
+
+    </aside>
+
+
+    <!-- CONTEÚDO -->
+    <main class="conteudo">
+
+        <div class="topo">
+
+            <div>
+                <h1>Detalhes do Chamado</h1>
+                <p>Informações completas do chamado #{{ chamado.id }}</p>
+            </div>
+
+        </div>
+
+
+        <div class="detalhes-chamado">
+
+            <p>
+                <strong>ID:</strong>
+                #{{ chamado.id }}
+            </p>
+
+            <p>
+                <strong>Título:</strong>
+                {{ chamado.titulo }}
+            </p>
+
+            <p>
+                <strong>Descrição:</strong>
+                {{ chamado.descricao }}
+            </p>
+
+            <p>
+                <strong>Prioridade:</strong>
+
+                <span class="badge prioridade-{{ chamado.prioridade|lower }}">
+                    {{ chamado.prioridade }}
+                </span>
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+
+                <span class="badge status-{{ chamado.status|lower|replace(' ', '-') }}">
+                    {{ chamado.status }}
+                </span>
+            </p>
+
+            <p>
+                <strong>Data de criação:</strong>
+
+                {% if chamado.data_criacao %}
+                    {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                {% endif %}
+            </p>
+
+
+            <div class="acoes-chamado">
+
+                <a
+                    href="/chamados-web"
+                    class="btn-ver"
+                >
+                    ← Voltar para Chamados
+                </a>
+
+                <a
+                    href="/chamados/{{ chamado.id }}/status"
+                    class="btn-status"
+                >
+                    Alterar Status
+                </a>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>
