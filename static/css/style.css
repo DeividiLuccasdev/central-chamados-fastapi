@@ -839,3 +839,287 @@ body {
     color: #2563eb;
     border-radius: 50%;
 }
+/* =====================================================
+   TELA - DETALHES DO CHAMADO
+   ===================================================== */
+
+.detalhes-topo {
+    margin-bottom: 24px;
+}
+
+.detalhes-topo h1 {
+    font-size: 32px;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.detalhes-topo p {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 15px;
+}
+
+
+/* CARD PRINCIPAL */
+
+.detalhes-visualizacao {
+    max-width: 1000px;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+
+    box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.03),
+        0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+
+/* GRID DOS DADOS */
+
+.detalhes-visualizacao .detalhes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 0;
+
+    padding: 30px;
+}
+
+
+/* CADA INFORMAÇÃO */
+
+.detalhes-visualizacao .detalhe-item {
+    display: flex;
+    flex-direction: column;
+
+    gap: 9px;
+
+    padding: 20px;
+
+    border-bottom: 1px solid #f1f5f9;
+}
+
+
+/* COLUNA ESQUERDA */
+
+.detalhes-visualizacao .detalhe-item:nth-child(odd) {
+    border-right: 1px solid #f1f5f9;
+}
+
+
+/* TÍTULO E DESCRIÇÃO */
+
+.detalhes-visualizacao .detalhe-largo {
+    grid-column: 1 / -1;
+
+    border-right: none !important;
+}
+
+
+/* LABEL */
+
+.detalhes-visualizacao .detalhe-label {
+    font-size: 12px;
+
+    font-weight: 700;
+
+    color: #64748b;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+
+/* VALORES */
+
+.detalhes-visualizacao .detalhe-valor {
+    font-size: 17px;
+
+    font-weight: 600;
+
+    color: #1e293b;
+}
+
+
+/* TÍTULO DO CHAMADO */
+
+.detalhes-visualizacao .detalhe-titulo {
+    font-size: 20px;
+
+    color: #0f172a;
+}
+
+
+/* DESCRIÇÃO */
+
+.detalhes-visualizacao .detalhe-descricao {
+    padding: 16px 18px;
+
+    background: #f8fafc;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 10px;
+
+    color: #334155;
+
+    font-size: 15px;
+
+    line-height: 1.6;
+
+    min-height: 80px;
+}
+
+
+/* BADGES */
+
+.detalhes-visualizacao .badge {
+    width: fit-content;
+
+    padding: 7px 14px;
+
+    border-radius: 999px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+
+/* ÁREA DOS BOTÕES */
+
+.detalhes-visualizacao .acoes-chamado {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 22px 30px;
+
+    background: #f8fafc;
+
+    border-top: 1px solid #e5e7eb;
+}
+
+
+/* BOTÃO VOLTAR */
+
+.detalhes-visualizacao .btn-ver {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-height: 44px;
+
+    padding: 0 20px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    border-radius: 9px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition: 0.2s ease;
+}
+
+
+.detalhes-visualizacao .btn-ver:hover {
+    background: #1d4ed8;
+
+    transform: translateY(-1px);
+
+    box-shadow: 0 5px 12px rgba(37, 99, 235, 0.20);
+}
+
+
+/* BOTÃO ALTERAR STATUS */
+
+.detalhes-visualizacao .btn-status {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-height: 44px;
+
+    padding: 0 20px;
+
+    background: #f59e0b;
+
+    color: #ffffff;
+
+    border-radius: 9px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition: 0.2s ease;
+}
+
+
+.detalhes-visualizacao .btn-status:hover {
+    background: #d97706;
+
+    transform: translateY(-1px);
+
+    box-shadow: 0 5px 12px rgba(245, 158, 11, 0.20);
+}
+
+
+/* RESPONSIVO */
+
+@media (max-width: 800px) {
+
+    .detalhes-visualizacao .detalhes-grid {
+        grid-template-columns: 1fr;
+
+        padding: 20px;
+    }
+
+
+    .detalhes-visualizacao .detalhe-item {
+        border-right: none !important;
+
+        padding: 17px 10px;
+    }
+
+
+    .detalhes-visualizacao .detalhe-largo {
+        grid-column: auto;
+    }
+
+
+    .detalhes-visualizacao .acoes-chamado {
+        flex-direction: column;
+
+        align-items: stretch;
+
+        padding: 20px;
+    }
+
+
+    .detalhes-visualizacao .btn-ver,
+    .detalhes-visualizacao .btn-status {
+        width: 100%;
+    }
+
+}

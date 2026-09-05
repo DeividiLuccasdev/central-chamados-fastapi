@@ -40,58 +40,118 @@
     <!-- CONTEÚDO -->
     <main class="conteudo">
 
-        <div class="topo">
+        <!-- TOPO -->
+        <div class="topo detalhes-topo">
 
             <div>
                 <h1>Detalhes do Chamado</h1>
-                <p>Informações completas do chamado #{{ chamado.id }}</p>
+                <p>
+                    Visualize todas as informações do chamado
+                    <strong>#{{ chamado.id }}</strong>
+                </p>
             </div>
 
         </div>
 
 
-        <div class="detalhes-chamado">
+        <!-- CARD -->
+        <section class="detalhes-chamado detalhes-visualizacao">
 
-            <p>
-                <strong>ID:</strong>
-                #{{ chamado.id }}
-            </p>
+            <div class="detalhes-grid">
 
-            <p>
-                <strong>Título:</strong>
-                {{ chamado.titulo }}
-            </p>
+                <!-- ID -->
+                <div class="detalhe-item">
 
-            <p>
-                <strong>Descrição:</strong>
-                {{ chamado.descricao }}
-            </p>
+                    <span class="detalhe-label">
+                        ID do chamado
+                    </span>
 
-            <p>
-                <strong>Prioridade:</strong>
+                    <span class="detalhe-valor">
+                        #{{ chamado.id }}
+                    </span>
 
-                <span class="badge prioridade-{{ chamado.prioridade|lower }}">
-                    {{ chamado.prioridade }}
-                </span>
-            </p>
-
-            <p>
-                <strong>Status:</strong>
-
-                <span class="badge status-{{ chamado.status|lower|replace(' ', '-') }}">
-                    {{ chamado.status }}
-                </span>
-            </p>
-
-            <p>
-                <strong>Data de criação:</strong>
-
-                {% if chamado.data_criacao %}
-                    {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
-                {% endif %}
-            </p>
+                </div>
 
 
+                <!-- STATUS -->
+                <div class="detalhe-item">
+
+                    <span class="detalhe-label">
+                        Status
+                    </span>
+
+                    <span class="badge status-{{ chamado.status|lower|replace(' ', '-') }}">
+                        {{ chamado.status }}
+                    </span>
+
+                </div>
+
+
+                <!-- PRIORIDADE -->
+                <div class="detalhe-item">
+
+                    <span class="detalhe-label">
+                        Prioridade
+                    </span>
+
+                    <span class="badge prioridade-{{ chamado.prioridade|lower }}">
+                        {{ chamado.prioridade }}
+                    </span>
+
+                </div>
+
+
+                <!-- DATA -->
+                <div class="detalhe-item">
+
+                    <span class="detalhe-label">
+                        Data de criação
+                    </span>
+
+                    <span class="detalhe-valor">
+
+                        {% if chamado.data_criacao %}
+                            {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                            Não informada
+                        {% endif %}
+
+                    </span>
+
+                </div>
+
+
+                <!-- TÍTULO -->
+                <div class="detalhe-item detalhe-largo">
+
+                    <span class="detalhe-label">
+                        Título
+                    </span>
+
+                    <span class="detalhe-valor detalhe-titulo">
+                        {{ chamado.titulo }}
+                    </span>
+
+                </div>
+
+
+                <!-- DESCRIÇÃO -->
+                <div class="detalhe-item detalhe-largo">
+
+                    <span class="detalhe-label">
+                        Descrição
+                    </span>
+
+                    <div class="detalhe-descricao">
+                        {{ chamado.descricao }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- AÇÕES -->
             <div class="acoes-chamado">
 
                 <a
@@ -110,7 +170,7 @@
 
             </div>
 
-        </div>
+        </section>
 
     </main>
 
