@@ -2,7 +2,8 @@ import jwt
 import models
 import os
 
-
+from datetime import timezone
+from zoneinfo import ZoneInfo
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi import FastAPI, Depends, HTTPException, Request, Form
@@ -17,11 +18,35 @@ from schemas import UsuarioCriar, UsuarioLogin, ChamadoCriar, ChamadoStatus
 from pwdlib import PasswordHash
 from schemas import UsuarioLogin
 from datetime import datetime, timedelta, timezone
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt.exceptions import InvalidTokenError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+
+
+app = FastAPI()
+
+BASE_DIR = Path(__file__).resolve().parent
+
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "static"),
+    name="static"
+)
+
+FUSO_BRASIL = ZoneInfo("America/Sao_Paulo")
+
+
+def horario_brasil(data):
+    if not data:
+        return "-"
+
+    if data.tzinfo is None:
+        data = data.replace(tzinfo=timezone.utc)
+
+    return data.astimezone(FUSO_BRASIL).strftime("%d/%m/%Y %H:%M")
+
+
 
 
 app = FastAPI()
@@ -39,6 +64,7 @@ app.add_middleware(
     secret_key=os.getenv("JWT_SECRET_KEY")
 )
 templates = Jinja2Templates(directory="templates")
+templates.env.filters["horario_brasil"] = horario_brasil
 
 app.mount(
     "/static",
