@@ -110,8 +110,8 @@
 
                     <span class="detalhe-valor">
 
-                        {% if chamado.data_criacao %}
-                            {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                       {% if chamado.data_criacao %}
+                            {{ chamado.data_criacao | horario_brasil }}
                         {% else %}
                             Não informada
                         {% endif %}
@@ -119,6 +119,45 @@
                     </span>
 
                 </div>
+
+                <!-- ÚLTIMA ATUALIZAÇÃO -->
+<div class="detalhe-item">
+
+    <span class="detalhe-label">
+        Última atualização
+    </span>
+
+    <span class="detalhe-valor">
+
+        {% if chamado.data_atualizacao %}
+            {{ chamado.data_atualizacao | horario_brasil }}
+        {% else %}
+            Ainda não houve alteração
+        {% endif %}
+
+    </span>
+
+</div>
+
+
+<!-- DATA DE FECHAMENTO -->
+<div class="detalhe-item">
+
+    <span class="detalhe-label">
+        Fechado em
+    </span>
+
+    <span class="detalhe-valor">
+
+        {% if chamado.data_fechamento %}
+            {{ chamado.data_fechamento | horario_brasil }}
+        {% else %}
+            Chamado ainda não resolvido
+        {% endif %}
+
+    </span>
+
+</div>
 
 
                 <!-- TÍTULO -->

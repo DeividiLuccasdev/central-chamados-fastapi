@@ -99,7 +99,8 @@
             <th>Título</th>
             <th>Prioridade</th>
             <th>Status</th>
-            <th>Data</th>
+            <th>Aberto em</th>
+            <th>Última atualização</th>
             <th>Ações</th>
         </tr>
     </thead>
@@ -123,11 +124,21 @@
     </span>
         </td>
 
-                <td>
-                    {% if chamado.data_criacao %}
-                        {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
-                    {% endif %}
-                </td>
+            <td>
+    {% if chamado.data_criacao %}
+        {{ chamado.data_criacao | horario_brasil }}
+    {% else %}
+        -
+    {% endif %}
+</td>
+
+<td>
+    {% if chamado.data_atualizacao %}
+        {{ chamado.data_atualizacao | horario_brasil }}
+    {% else %}
+        -
+    {% endif %}
+</td>
 
                <td class="acoes-chamado">
 

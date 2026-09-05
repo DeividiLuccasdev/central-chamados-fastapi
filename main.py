@@ -41,10 +41,17 @@ def horario_brasil(data):
     if not data:
         return "-"
 
+    print("DATA RECEBIDA:", repr(data))
+    print("TZINFO RECEBIDO:", data.tzinfo)
+
     if data.tzinfo is None:
         data = data.replace(tzinfo=timezone.utc)
 
-    return data.astimezone(FUSO_BRASIL).strftime("%d/%m/%Y %H:%M")
+    convertida = data.astimezone(FUSO_BRASIL)
+
+    print("DATA CONVERTIDA:", repr(convertida))
+
+    return convertida.strftime("%d/%m/%Y %H:%M")
 
 
 
@@ -65,16 +72,6 @@ app.add_middleware(
 )
 templates = Jinja2Templates(directory="templates")
 templates.env.filters["horario_brasil"] = horario_brasil
-
-app.mount(
-    "/static",
-    StaticFiles(directory="static"),
-    name="static"
-)
-
-templates = Jinja2Templates(
-    directory="templates"
-)
 
 
 def get_db():
@@ -176,7 +173,7 @@ def criar_usuario(
     )
 
     db.add(novo_usuario)
-    db.commit()
+    
     db.refresh(novo_usuario)
 
     return {
@@ -381,11 +378,12 @@ def painel(request: Request):
         name="dashboard.html",
         context={}
     )
-@app.get("/chamados/{chamado_id}/status")
-def pagina_alterar_status(
-    chamado_id: int,
-    request: Request,
-    db: Session = Depends(get_db)
+    
+
+
+@app.get("/novo-chamado")
+def pagina_novo_chamado(
+    request: Request
 ):
     usuario_id = request.session.get("usuario_id")
 
@@ -395,16 +393,10 @@ def pagina_alterar_status(
             status_code=303
         )
 
-    chamado = db.query(models.Chamado).filter(
-        models.Chamado.id == chamado_id
-    ).first()
-
     return templates.TemplateResponse(
         request=request,
-        name="alterar_status.html",
-        context={
-            "chamado": chamado
-        }
+        name="novo_chamado.html",
+        context={}
     )
 @app.post("/chamados/{chamado_id}/status")
 def salvar_status_chamado(
@@ -431,6 +423,8 @@ def salvar_status_chamado(
             detail="Chamado não encontrado"
         )
 
+    status = status.strip().lower()
+
     status_permitidos = [
         "aberto",
         "em andamento",
@@ -443,35 +437,26 @@ def salvar_status_chamado(
             detail="Status inválido"
         )
 
-    chamado.status = status
+    # Registra a alteração somente se o status mudou
+    if (chamado.status or "").strip().lower() != status:
+
+        agora = datetime.now(timezone.utc)
+
+        chamado.status = status
+        chamado.data_atualizacao = agora
+
+        # Se resolveu, registra a hora de fechamento
+        if status == "resolvido":
+            chamado.data_fechamento = agora
+        else:
+            # Se reabrir, remove a data de fechamento
+            chamado.data_fechamento = None
 
     db.commit()
 
     return RedirectResponse(
         url="/dashboard",
         status_code=303
-    )
-
-    return RedirectResponse(
-        url="/dashboard",
-        status_code=303
-    )
-@app.get("/novo-chamado")
-def pagina_novo_chamado(
-    request: Request
-):
-    usuario_id = request.session.get("usuario_id")
-
-    if not usuario_id:
-        return RedirectResponse(
-            url="/login-web",
-            status_code=303
-        )
-
-    return templates.TemplateResponse(
-        request=request,
-        name="novo_chamado.html",
-        context={}
     )
 
 @app.get("/login-web")
@@ -589,6 +574,37 @@ def pagina_novo_usuario(
         name="novo_usuario.html",
         context={
             "erro": None
+        }
+    )
+@app.get("/chamados/{chamado_id}/status")
+def pagina_alterar_status(
+    chamado_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    usuario_id = request.session.get("usuario_id")
+
+    if not usuario_id:
+        return RedirectResponse(
+            url="/login-web",
+            status_code=303
+        )
+
+    chamado = db.query(models.Chamado).filter(
+        models.Chamado.id == chamado_id
+    ).first()
+
+    if not chamado:
+        raise HTTPException(
+            status_code=404,
+            detail="Chamado não encontrado"
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="alterar_status.html",
+        context={
+            "chamado": chamado
         }
     )
 @app.post("/novo-usuario")

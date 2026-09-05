@@ -37,41 +37,27 @@ class Usuario(Base):
 class Chamado(Base):
     __tablename__ = "chamados"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True
-    )
-
-    titulo = Column(
-        String(150),
-        nullable=False
-    )
-
-    descricao = Column(
-        Text,
-        nullable=False
-    )
-
-    prioridade = Column(
-        String(20),
-        nullable=False,
-        default="media"
-    )
-
-    status = Column(
-        String(30),
-        nullable=False,
-        default="aberto"
-    )
-
-    usuario_id = Column(
-        Integer,
-        ForeignKey("usuarios.id"),
-        nullable=False
-    )
+    id = Column(Integer, primary_key=True, index=True)
+    titulo = Column(String, nullable=False)
+    descricao = Column(Text)
+    prioridade = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
 
     data_criacao = Column(
-        DateTime,
-        server_default=func.now()
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
     )
+
+    data_atualizacao = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    data_fechamento = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    
+

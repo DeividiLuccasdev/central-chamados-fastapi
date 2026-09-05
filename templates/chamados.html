@@ -161,7 +161,7 @@
 
             <td>
                 {% if chamado.data_criacao %}
-                    {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                    {{ chamado.data_criacao | horario_brasil }}
                 {% endif %}
             </td>
 
