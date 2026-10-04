@@ -159,7 +159,7 @@ O projeto possui:
 - `.env` protegido pelo `.gitignore`
 - `.env` excluído também da imagem Docker
 - Aplicação não sobe sem `JWT_SECRET_KEY` configurada
-- Cookie de sessão com `SameSite=Lax` e opção `HTTPS only` para produção
+- Cookie de sessão com `SameSite=Lax` e `HTTPS only` ativado automaticamente no Render
 - Container executado sem usuário root
 
 ---
@@ -266,7 +266,7 @@ http://127.0.0.1:8000/docs
 | `DATABASE_URL` | Não | URL completa do banco (Neon / Render). Tem prioridade sobre as variáveis `DB_*` |
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Não | Dados do banco local |
 | `JWT_EXPIRACAO_MINUTOS` | Não | Validade do token (padrão: 60) |
-| `SESSION_HTTPS_ONLY` | Não | `true` em produção, para o cookie de sessão trafegar só via HTTPS |
+| `SESSION_HTTPS_ONLY` | Não | Cookie de sessão só via HTTPS. Se não for informada, é ativada automaticamente no Render |
 
 ---
 

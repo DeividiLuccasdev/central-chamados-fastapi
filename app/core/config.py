@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        env_ignore_empty=True,
         extra="ignore"
     )
 
@@ -29,8 +30,17 @@ class Settings(BaseSettings):
     jwt_algoritmo: str = "HS256"
     jwt_expiracao_minutos: int = 60
 
-    # Em produção (HTTPS), defina SESSION_HTTPS_ONLY=true
-    session_https_only: bool = False
+    # Cookie de sessão só via HTTPS. Se não for informado, é ligado
+    # automaticamente no Render (que define RENDER=true em todo serviço).
+    session_https_only: bool | None = None
+    render: bool = False
+
+    @property
+    def cookie_https_only(self) -> bool:
+        if self.session_https_only is not None:
+            return self.session_https_only
+
+        return self.render
 
     @property
     def url_banco(self) -> str | URL:
