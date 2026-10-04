@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app
+from main import app, validar_token
 
 client = TestClient(app)
 
@@ -25,13 +25,32 @@ def test_dashboard_exige_login():
     assert resposta.headers["location"] == "/login-web"
 
 def test_usuario_senha_curta():
+    # A rota exige token; simula um usuário autenticado
+    app.dependency_overrides[validar_token] = lambda: {"sub": "1"}
+
+    try:
+        resposta = client.post(
+            "/usuarios",
+            json={
+                "nome": "Usuario Teste",
+                "email": "teste@teste.com",
+                "senha": "123"
+            }
+        )
+    finally:
+        app.dependency_overrides.pop(validar_token)
+
+    assert resposta.status_code == 422
+
+
+def test_criar_usuario_exige_token():
     resposta = client.post(
         "/usuarios",
         json={
             "nome": "Usuario Teste",
             "email": "teste@teste.com",
-            "senha": "123"
+            "senha": "123456"
         }
     )
 
-    assert resposta.status_code == 422
+    assert resposta.status_code == 401

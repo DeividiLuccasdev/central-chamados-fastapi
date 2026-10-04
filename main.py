@@ -1,27 +1,22 @@
-import jwt
-import models
 import os
-
-from datetime import timezone
-from zoneinfo import ZoneInfo
-from starlette.middleware.sessions import SessionMiddleware
-from fastapi.responses import RedirectResponse
-from fastapi import FastAPI, Depends, HTTPException, Request, Form
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-from fastapi import Request
-from fastapi import FastAPI, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import Usuario
-from schemas import UsuarioCriar, UsuarioLogin, ChamadoCriar, ChamadoStatus
-from pwdlib import PasswordHash
-from schemas import UsuarioLogin
 from datetime import datetime, timedelta, timezone
-from jwt.exceptions import InvalidTokenError
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import jwt
+from fastapi import FastAPI, Depends, HTTPException, Request, Form
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
+from fastapi.templating import Jinja2Templates
+from jwt.exceptions import InvalidTokenError
+from pwdlib import PasswordHash
+from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
+
+import models
+from database import SessionLocal
+from schemas import UsuarioCriar, UsuarioLogin, ChamadoCriar, ChamadoStatus
 
 
 app = FastAPI()
@@ -36,35 +31,24 @@ app.mount(
 
 FUSO_BRASIL = ZoneInfo("America/Sao_Paulo")
 
+STATUS_PERMITIDOS = [
+    "aberto",
+    "em andamento",
+    "resolvido"
+]
+
 
 def horario_brasil(data):
     if not data:
         return "-"
-
-    print("DATA RECEBIDA:", repr(data))
-    print("TZINFO RECEBIDO:", data.tzinfo)
 
     if data.tzinfo is None:
         data = data.replace(tzinfo=timezone.utc)
 
     convertida = data.astimezone(FUSO_BRASIL)
 
-    print("DATA CONVERTIDA:", repr(convertida))
-
     return convertida.strftime("%d/%m/%Y %H:%M")
 
-
-
-
-app = FastAPI()
-
-BASE_DIR = Path(__file__).resolve().parent
-
-app.mount(
-    "/static",
-    StaticFiles(directory=BASE_DIR / "static"),
-    name="static"
-)
 
 app.add_middleware(
     SessionMiddleware,
@@ -83,6 +67,46 @@ def get_db():
         db.close()
 
 
+def obter_usuario_sessao(request: Request, db: Session):
+    """Retorna o id do usuário logado na sessão web, ou None.
+
+    Se o usuário foi inativado (ou removido) depois do login,
+    a sessão é encerrada.
+    """
+    usuario_id = request.session.get("usuario_id")
+
+    if not usuario_id:
+        return None
+
+    usuario = db.get(models.Usuario, usuario_id)
+
+    if not usuario or not usuario.ativo:
+        request.session.clear()
+        return None
+
+    return usuario_id
+
+
+def aplicar_status(chamado: models.Chamado, status: str):
+    """Altera o status do chamado e registra as datas de atualização e fechamento."""
+
+    # Registra a alteração somente se o status mudou
+    if (chamado.status or "").strip().lower() == status:
+        return
+
+    agora = datetime.now(timezone.utc)
+
+    chamado.status = status
+    chamado.data_atualizacao = agora
+
+    # Se resolveu, registra a hora de fechamento
+    if status == "resolvido":
+        chamado.data_fechamento = agora
+    else:
+        # Se reabrir, remove a data de fechamento
+        chamado.data_fechamento = None
+
+
 @app.get("/")
 def inicio():
     return {"mensagem": "Central de Chamados funcionando!"}
@@ -97,26 +121,6 @@ TEMPO_TOKEN_MINUTOS = 60
 
 security = HTTPBearer()
 
-
-def verificar_token(
-    credenciais: HTTPAuthorizationCredentials = Depends(security)
-):
-    token = credenciais.credentials
-
-    try:
-        dados = jwt.decode(
-            token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
-        )
-
-        return dados
-
-    except InvalidTokenError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token inválido ou expirado"
-        )
 
 def criar_token(dados: dict):
     dados_token = dados.copy()
@@ -139,7 +143,8 @@ def criar_token(dados: dict):
 
 
 def validar_token(
-    credenciais: HTTPAuthorizationCredentials = Depends(security)
+    credenciais: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
 ):
     token = credenciais.credentials
 
@@ -150,13 +155,22 @@ def validar_token(
             algorithms=[ALGORITHM]
         )
 
-        return dados
-
-    except jwt.InvalidTokenError:
+    except InvalidTokenError:
         raise HTTPException(
             status_code=401,
             detail="Token inválido ou expirado"
         )
+
+    # Tokens de usuários inativados deixam de valer
+    usuario = db.get(models.Usuario, int(dados["sub"]))
+
+    if not usuario or not usuario.ativo:
+        raise HTTPException(
+            status_code=401,
+            detail="Token inválido ou expirado"
+        )
+
+    return dados
 
 
 @app.post("/usuarios")
@@ -173,7 +187,7 @@ def criar_usuario(
     )
 
     db.add(novo_usuario)
-    
+    db.commit()
     db.refresh(novo_usuario)
 
     return {
@@ -203,6 +217,12 @@ def login(
             detail="E-mail ou senha inválidos"
         )
 
+    if not usuario.ativo:
+        raise HTTPException(
+            status_code=403,
+            detail="Este usuário está inativo"
+        )
+
     token = criar_token({
         "sub": str(usuario.id),
         "email": usuario.email
@@ -222,7 +242,7 @@ def rota_protegida(
     }
 @app.get("/perfil")
 def perfil(
-    dados_token: dict = Depends(verificar_token)
+    dados_token: dict = Depends(validar_token)
 ):
     return {
         "mensagem": "Acesso autorizado",
@@ -263,7 +283,7 @@ def ver_chamado(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -306,19 +326,15 @@ def alterar_status_chamado(
             detail="Chamado não encontrado"
         )
 
-    status_permitidos = [
-        "aberto",
-        "em andamento",
-        "resolvido"
-    ]
+    status = dados.status.strip().lower()
 
-    if dados.status.lower() not in status_permitidos:
+    if status not in STATUS_PERMITIDOS:
         raise HTTPException(
             status_code=400,
             detail="Status inválido"
         )
 
-    chamado.status = dados.status.lower()
+    aplicar_status(chamado, status)
 
     db.commit()
     db.refresh(chamado)
@@ -333,7 +349,7 @@ def dashboard(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -372,20 +388,19 @@ def dashboard(
     )
 
 @app.get("/painel")
-def painel(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard.html",
-        context={}
+def painel():
+    return RedirectResponse(
+        url="/dashboard",
+        status_code=303
     )
-    
 
 
 @app.get("/novo-chamado")
 def pagina_novo_chamado(
-    request: Request
+    request: Request,
+    db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -405,7 +420,7 @@ def salvar_status_chamado(
     status: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -425,32 +440,13 @@ def salvar_status_chamado(
 
     status = status.strip().lower()
 
-    status_permitidos = [
-        "aberto",
-        "em andamento",
-        "resolvido"
-    ]
-
-    if status not in status_permitidos:
+    if status not in STATUS_PERMITIDOS:
         raise HTTPException(
             status_code=400,
             detail="Status inválido"
         )
 
-    # Registra a alteração somente se o status mudou
-    if (chamado.status or "").strip().lower() != status:
-
-        agora = datetime.now(timezone.utc)
-
-        chamado.status = status
-        chamado.data_atualizacao = agora
-
-        # Se resolveu, registra a hora de fechamento
-        if status == "resolvido":
-            chamado.data_fechamento = agora
-        else:
-            # Se reabrir, remove a data de fechamento
-            chamado.data_fechamento = None
+    aplicar_status(chamado, status)
 
     db.commit()
 
@@ -526,7 +522,7 @@ def salvar_novo_chamado(
     prioridade: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -559,9 +555,10 @@ def logout(request: Request):
     )
 @app.get("/novo-usuario")
 def pagina_novo_usuario(
-    request: Request
+    request: Request,
+    db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -582,7 +579,7 @@ def pagina_alterar_status(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -615,7 +612,7 @@ def salvar_novo_usuario(
     senha: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -665,7 +662,7 @@ def listar_usuarios_web(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
@@ -691,7 +688,7 @@ def inativar_usuario(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    usuario_logado = request.session.get("usuario_id")
+    usuario_logado = obter_usuario_sessao(request, db)
 
     if not usuario_logado:
         return RedirectResponse(
@@ -730,7 +727,7 @@ def ativar_usuario(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    usuario_logado = request.session.get("usuario_id")
+    usuario_logado = obter_usuario_sessao(request, db)
 
     if not usuario_logado:
         return RedirectResponse(
@@ -764,7 +761,7 @@ def listar_chamados_web(
     busca: str | None = None,
     db: Session = Depends(get_db)
 ):
-    usuario_id = request.session.get("usuario_id")
+    usuario_id = obter_usuario_sessao(request, db)
 
     if not usuario_id:
         return RedirectResponse(
