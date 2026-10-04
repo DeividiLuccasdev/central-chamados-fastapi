@@ -88,7 +88,7 @@ app/
 │   └── web.py         # Páginas web
 ├── templates/         # HTML (layout base + páginas)
 └── static/            # CSS
-scripts/               # Criação das tabelas e teste de conexão
+scripts/               # Criação das tabelas, usuários e teste de conexão
 testes/                # Testes automatizados (pytest)
 ```
 
@@ -237,6 +237,14 @@ Crie as tabelas no banco:
 ```bash
 python -m scripts.criar_tabelas
 ```
+
+Crie o primeiro usuário (a senha é pedida no terminal):
+
+```bash
+python -m scripts.criar_usuario --email voce@exemplo.com --nome "Seu Nome"
+```
+
+> O mesmo comando redefine a senha de um usuário que já existe.
 
 Inicie o servidor:
 
