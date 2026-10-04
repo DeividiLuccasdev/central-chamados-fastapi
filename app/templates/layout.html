@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block corpo %}
+<div class="layout">
+
+    <!-- MENU LATERAL -->
+    <aside class="sidebar">
+
+        <h2>Central de Chamados</h2>
+
+        <div class="usuario-logado">
+            👤 {{ request.session.get("usuario_nome") }}
+        </div>
+
+        <nav>
+            <a href="/dashboard">🏠 Dashboard</a>
+            <a href="/chamados-web">🎫 Chamados</a>
+            <a href="/novo-chamado">➕ Novo Chamado</a>
+            <a href="/usuarios-web">👤 Usuários</a>
+            <a href="/logout">🚪 Sair</a>
+        </nav>
+
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="conteudo">
+{% block conteudo %}{% endblock %}
+    </main>
+
+</div>
+{% endblock %}

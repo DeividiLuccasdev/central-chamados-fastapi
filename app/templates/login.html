@@ -1,20 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block titulo %}Login - Central de Chamados{% endblock %}
 
-    <title>Login - Central de Chamados</title>
+{% block body_classe %} class="pagina-login"{% endblock %}
 
-    <link
-        rel="stylesheet"
-        href="/static/css/style.css"
-    >
-</head>
-
-<body class="pagina-login">
-
+{% block corpo %}
     <div class="detalhes-chamado login-card">
 
         <div class="login-cabecalho">
@@ -101,20 +91,9 @@
         </p>
 
     </div>
-<script>
-    function toggleSenha() {
-        const campoSenha = document.getElementById("senha");
-        const botaoOlho = document.querySelector(".btn-olho");
+{% endblock %}
 
-        if (campoSenha.type === "password") {
-            campoSenha.type = "text";
-            botaoOlho.textContent = "🙈";
-        } else {
-            campoSenha.type = "password";
-            botaoOlho.textContent = "👁";
-        }
-    }
-</script>
+{% block scripts %}
 <script>
 function mostrarSenha() {
     const senha = document.getElementById("senha");
@@ -126,6 +105,4 @@ function mostrarSenha() {
     }
 }
 </script>
-</body>
-
-</html>
+{% endblock %}
