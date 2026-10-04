@@ -15,6 +15,8 @@ O projeto foi criado com foco em desenvolvimento backend e construção de portf
 
 [![Acessar Sistema](https://img.shields.io/badge/Acessar%20Sistema-Online-success?style=for-the-badge)](https://central-chamados-fastapi.onrender.com/login-web)
 
+> ⏳ **O primeiro acesso pode demorar de 30 a 60 segundos.** A aplicação usa o plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso. Depois que ele acorda, tudo responde normalmente.
+
 ---
 
 ## 🚀 Funcionalidades
