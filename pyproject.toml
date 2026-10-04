@@ -1,0 +1,28 @@
+[project]
+name = "central-chamados-fastapi"
+version = "1.0.0"
+description = "Sistema web e API REST para gerenciamento de chamados com FastAPI e PostgreSQL."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["testes"]
+pythonpath = ["."]
+addopts = "-ra"
+filterwarnings = [
+    # Aviso do Starlette sobre a troca futura de httpx por httpx2 no TestClient
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "B008",  # Depends()/Form()/Query() nos parâmetros é o padrão do FastAPI
+    "B904",  # raise HTTPException dentro de except é intencional
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

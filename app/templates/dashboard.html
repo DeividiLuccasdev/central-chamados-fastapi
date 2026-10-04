@@ -1,37 +1,8 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+{% extends "layout.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block titulo %}Dashboard - Central de Chamados{% endblock %}
 
-    <title>Central de Chamados</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', path='css/style.css') }}">
-</head>
-
-<body>
-
-    <div class="layout">
-
-        <aside class="sidebar">
-            <h2>Central de Chamados</h2>
-            <div class="usuario-logado">
-    👤 {{ request.session.get("usuario_nome") }}
-</div>
-
- <nav>
-    <a href="/dashboard">🏠 Dashboard</a>
-    <a href="/chamados-web">🎫 Chamados</a>
-    <a href="/novo-chamado">➕ Novo Chamado</a>
-    <a href="/usuarios-web">👤 Usuários</a>
-    <a href="/logout">🚪 Sair</a>
-</nav>
-        </aside>
-
-        <main class="conteudo">
-
+{% block conteudo %}
             <div class="topo">
                 <div>
                     <h1>Dashboard</h1>
@@ -167,7 +138,4 @@
     {% endif %}
 
 </section>
-
-</body>
-
-</html>
+{% endblock %}

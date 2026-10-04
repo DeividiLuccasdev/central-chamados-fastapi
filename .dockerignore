@@ -9,7 +9,12 @@ __pycache__/
 *.pyc
 
 .git/
+.github/
 .vscode/
 .pytest_cache/
+.ruff_cache/
+
+testes/
+screenshots/
 
 *.log
