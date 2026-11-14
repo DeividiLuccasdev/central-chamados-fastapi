@@ -16,6 +16,8 @@ RUN useradd --create-home --uid 1000 appuser
 
 COPY --chown=appuser:appuser app ./app
 COPY --chown=appuser:appuser scripts ./scripts
+COPY --chown=appuser:appuser migracoes ./migracoes
+COPY --chown=appuser:appuser alembic.ini ./
 
 USER appuser
 

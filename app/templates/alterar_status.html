@@ -29,10 +29,23 @@
             </p>
 
 
+            {% if erro %}
+
+                <div class="erro-login">
+                    ⚠️ {{ erro }}
+                </div>
+
+            {% endif %}
+
+
             <form
                 method="POST"
                 action="/chamados/{{ chamado.id }}/status"
             >
+
+                {# O que estava na tela: se o chamado mudar antes do envio, o servidor recusa #}
+                <input type="hidden" name="status_atual" value="{{ chamado.status }}">
+                <input type="hidden" name="versao" value="{{ chamado.versao }}">
 
                 <label for="status">
                     Novo status

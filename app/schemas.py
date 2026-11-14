@@ -21,10 +21,15 @@ class UsuarioCriar(BaseModel):
     email: str = Field(min_length=3, max_length=150)
     senha: str = Field(min_length=6)
 
+    # E-mails são comparados sem diferenciar maiúsculas: grava sempre minúsculo
+    _normalizar_email = field_validator("email", mode="before")(normalizar_texto)
+
 
 class UsuarioLogin(BaseModel):
     email: str
     senha: str
+
+    _normalizar_email = field_validator("email", mode="before")(normalizar_texto)
 
 
 class UsuarioResposta(BaseModel):
@@ -54,7 +59,14 @@ class ChamadoCriar(BaseModel):
 class ChamadoStatus(BaseModel):
     status: StatusChamado
 
-    _normalizar_status = field_validator("status", mode="before")(normalizar_texto)
+    # Opcionais, para controle de concorrência: o status e/ou a versão que o
+    # cliente viu. Se o chamado mudou desde então, a API responde 409.
+    status_atual: StatusChamado | None = None
+    versao: int | None = Field(default=None, ge=1)
+
+    _normalizar_status = field_validator("status", "status_atual", mode="before")(
+        normalizar_texto
+    )
 
 
 class ChamadoResposta(BaseModel):
@@ -66,6 +78,7 @@ class ChamadoResposta(BaseModel):
     prioridade: str
     status: str
     usuario_id: int | None
+    versao: int
     data_criacao: datetime | None
     data_atualizacao: datetime | None
     data_fechamento: datetime | None

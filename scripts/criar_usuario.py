@@ -16,37 +16,42 @@ import sys
 
 from sqlalchemy.orm import Session
 
-from app import models
+from app import models, services
 from app.core.security import gerar_hash_senha
 from app.database import SessionLocal
 
 TAMANHO_MINIMO_SENHA = 6
 
 
+def _redefinir(db: Session, usuario: models.Usuario, nome: str | None, senha_hash: str) -> None:
+    usuario.senha = senha_hash
+    usuario.ativo = True
+
+    if nome:
+        usuario.nome = nome
+
+    db.commit()
+
+
 def criar_ou_redefinir(db: Session, email: str, nome: str | None, senha: str) -> bool:
     """Retorna True se criou um usuário novo e False se redefiniu um existente."""
 
-    usuario = db.query(models.Usuario).filter(
-        models.Usuario.email == email
-    ).first()
+    email = models.normalizar_email(email)
+    senha_hash = gerar_hash_senha(senha)
+
+    usuario = services.buscar_usuario_por_email(db, email)
 
     if usuario:
-        usuario.senha = gerar_hash_senha(senha)
-        usuario.ativo = True
-
-        if nome:
-            usuario.nome = nome
-
-        db.commit()
+        _redefinir(db, usuario, nome, senha_hash)
         return False
 
-    db.add(models.Usuario(
-        nome=nome or email.split("@")[0],
-        email=email,
-        senha=gerar_hash_senha(senha),
-        ativo=True
-    ))
-    db.commit()
+    try:
+        services.cadastrar_usuario(db, nome or email.split("@")[0], email, senha_hash)
+    except services.Conflito:
+        # Outro processo cadastrou o mesmo e-mail entre a consulta e o insert
+        _redefinir(db, services.buscar_usuario_por_email(db, email), nome, senha_hash)
+        return False
+
     return True
 
 
@@ -68,7 +73,7 @@ def main():
     parser.add_argument("--nome", help="Nome do usuário (padrão: parte do e-mail)")
     args = parser.parse_args()
 
-    email = args.email.strip()
+    email = models.normalizar_email(args.email)
     senha = pedir_senha()
 
     with SessionLocal() as db:

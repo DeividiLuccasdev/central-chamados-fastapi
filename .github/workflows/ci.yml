@@ -10,6 +10,26 @@ jobs:
     name: Lint e testes
     runs-on: ubuntu-latest
 
+    # PostgreSQL de verdade para os testes de concorrência (marcados com `pg`).
+    # O SQLite em memória dos testes rápidos não mostra disputas entre conexões.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: central_chamados_teste
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/central_chamados_teste
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,7 +45,7 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
 
-      - name: Testes (pytest)
+      - name: Testes (pytest, incluindo os de PostgreSQL)
         run: pytest
 
   docker:

@@ -1,10 +1,12 @@
 """Páginas web (Jinja2) autenticadas por sessão."""
 
+import uuid
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app import models
+from app import models, services
 from app.core.security import gerar_hash_senha, verificar_senha
 from app.database import get_db
 from app.dependencies import obter_usuario_web
@@ -64,9 +66,7 @@ def login_web(
     senha: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    usuario = db.query(models.Usuario).filter(
-        models.Usuario.email == email.strip()
-    ).first()
+    usuario = services.buscar_usuario_por_email(db, email)
 
     erro = None
     status_code = status.HTTP_200_OK
@@ -195,7 +195,9 @@ def pagina_novo_chamado(
     return templates.TemplateResponse(
         request=request,
         name="novo_chamado.html",
-        context={}
+        # Chave de uso único: um duplo clique ou um reenvio do formulário
+        # não abre o mesmo chamado duas vezes
+        context={"chave_idempotencia": str(uuid.uuid4())}
     )
 
 
@@ -204,6 +206,7 @@ def salvar_novo_chamado(
     titulo: str = Form(...),
     descricao: str = Form(...),
     prioridade: str = Form(...),
+    chave_idempotencia: str | None = Form(None),
     usuario: models.Usuario = Depends(obter_usuario_web),
     db: Session = Depends(get_db)
 ):
@@ -215,16 +218,39 @@ def salvar_novo_chamado(
             detail="Prioridade inválida"
         )
 
-    novo_chamado = models.Chamado(
-        titulo=titulo.strip(),
-        descricao=descricao.strip(),
-        prioridade=prioridade,
-        status="aberto",
-        usuario_id=usuario.id
-    )
+    dados = {
+        "titulo": titulo.strip(),
+        "descricao": descricao.strip(),
+        "prioridade": prioridade
+    }
 
-    db.add(novo_chamado)
-    db.commit()
+    def inserir() -> tuple[int, dict]:
+        novo_chamado = models.Chamado(**dados, status="aberto", usuario_id=usuario.id)
+        db.add(novo_chamado)
+        db.flush()
+        return status.HTTP_303_SEE_OTHER, {"id": novo_chamado.id}
+
+    if not chave_idempotencia:
+        inserir()
+        db.commit()
+        return redirecionar("/dashboard")
+
+    try:
+        services.executar_idempotente(
+            db,
+            usuario_id=usuario.id,
+            # O prefixo separa as chaves do formulário das enviadas pela API
+            chave=services.validar_chave("web:" + chave_idempotencia.strip()),
+            dados=dados,
+            executar=inserir
+        )
+    except ValueError as erro:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(erro))
+    except services.ChaveIdempotenciaReutilizada as erro:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(erro)
+        )
 
     return redirecionar("/dashboard")
 
@@ -253,14 +279,17 @@ def pagina_alterar_status(
     return templates.TemplateResponse(
         request=request,
         name="alterar_status.html",
-        context={"chamado": buscar_chamado(db, chamado_id)}
+        context={"chamado": buscar_chamado(db, chamado_id), "erro": None}
     )
 
 
 @router.post("/chamados/{chamado_id}/status")
 def salvar_status_chamado(
     chamado_id: int,
+    request: Request,
     novo_status: str = Form(..., alias="status"),
+    status_atual: str | None = Form(None),
+    versao: int | None = Form(None),
     usuario: models.Usuario = Depends(obter_usuario_web),
     db: Session = Depends(get_db)
 ):
@@ -274,9 +303,23 @@ def salvar_status_chamado(
             detail="Status inválido"
         )
 
-    chamado.alterar_status(novo_status)
-
-    db.commit()
+    try:
+        services.alterar_status(
+            db,
+            chamado,
+            novo_status,
+            # O formulário envia o status e a versão que estavam na tela
+            status_esperado=status_atual.strip().lower() if status_atual else None,
+            versao_esperada=versao
+        )
+    except services.Conflito as erro:
+        # Mostra o estado atual do chamado para a pessoa decidir de novo
+        return templates.TemplateResponse(
+            request=request,
+            name="alterar_status.html",
+            context={"chamado": buscar_chamado(db, chamado_id), "erro": str(erro)},
+            status_code=status.HTTP_409_CONFLICT
+        )
 
     return redirecionar("/dashboard")
 
@@ -324,16 +367,21 @@ def salvar_novo_usuario(
     usuario: models.Usuario = Depends(obter_usuario_web),
     db: Session = Depends(get_db)
 ):
-    nome = nome.strip()
-    email = email.strip()
-
     erro = None
 
     if len(senha) < 6:
         erro = "A senha deve ter pelo menos 6 caracteres."
 
-    elif db.query(models.Usuario).filter(models.Usuario.email == email).first():
-        erro = "Já existe um usuário com este e-mail."
+    else:
+        try:
+            services.cadastrar_usuario(
+                db,
+                nome=nome.strip(),
+                email=email,
+                senha_hash=gerar_hash_senha(senha)
+            )
+        except services.Conflito:
+            erro = "Já existe um usuário com este e-mail."
 
     if erro:
         return templates.TemplateResponse(
@@ -342,14 +390,6 @@ def salvar_novo_usuario(
             context={"erro": erro},
             status_code=status.HTTP_400_BAD_REQUEST
         )
-
-    db.add(models.Usuario(
-        nome=nome,
-        email=email,
-        senha=gerar_hash_senha(senha),
-        ativo=True
-    ))
-    db.commit()
 
     return redirecionar("/dashboard")
 
@@ -366,8 +406,12 @@ def inativar_usuario(
             detail="Você não pode inativar seu próprio usuário."
         )
 
-    buscar_usuario(db, usuario_id).ativo = False
-    db.commit()
+    buscar_usuario(db, usuario_id)
+
+    try:
+        services.inativar_usuario(db, ator_id=usuario.id, alvo_id=usuario_id)
+    except services.Conflito as erro:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(erro))
 
     return redirecionar("/usuarios-web")
 

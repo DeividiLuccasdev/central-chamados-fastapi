@@ -1,6 +1,16 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -17,6 +27,19 @@ PRIORIDADES_CHAMADO = (
     "media",
     "alta"
 )
+
+# Transições de status permitidas. Um chamado resolvido só volta a ficar
+# aberto por uma reabertura explícita (resolvido -> aberto): um formulário
+# antigo pedindo "em andamento" não reabre o chamado sem querer.
+TRANSICOES_STATUS = {
+    "aberto": {"em andamento", "resolvido"},
+    "em andamento": {"aberto", "resolvido"},
+    "resolvido": {"aberto"},
+}
+
+
+def normalizar_email(email: str) -> str:
+    return email.strip().lower()
 
 
 class Usuario(Base):
@@ -36,6 +59,11 @@ class Usuario(Base):
     chamados: Mapped[list["Chamado"]] = relationship(back_populates="usuario")
 
 
+# E-mail único sem diferenciar maiúsculas (A@x.com == a@x.com). Quem garante a
+# unicidade é o banco, inclusive com dois cadastros simultâneos.
+Index("uq_usuarios_email_lower", func.lower(Usuario.email), unique=True)
+
+
 class Chamado(Base):
     __tablename__ = "chamados"
 
@@ -45,6 +73,14 @@ class Chamado(Base):
     prioridade: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
     usuario_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("usuarios.id"))
+
+    # Incrementada a cada alteração de status (controle de concorrência otimista)
+    versao: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1"
+    )
 
     data_criacao: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -64,17 +100,31 @@ class Chamado(Base):
 
     usuario: Mapped[Usuario | None] = relationship(back_populates="chamados")
 
-    def alterar_status(self, novo_status: str) -> None:
-        """Altera o status e registra as datas de atualização e fechamento."""
 
-        # Registra a alteração somente se o status mudou
-        if (self.status or "").strip().lower() == novo_status:
-            return
+class ChaveIdempotencia(Base):
+    """Resposta já enviada para uma Idempotency-Key, por usuário.
 
-        agora = datetime.now(UTC)
+    É gravada na mesma transação do chamado criado: ou os dois existem, ou nenhum.
+    """
 
-        self.status = novo_status
-        self.data_atualizacao = agora
+    __tablename__ = "idempotency_keys"
+    __table_args__ = (
+        UniqueConstraint("usuario_id", "chave", name="uq_idempotency_keys_usuario_chave"),
+    )
 
-        # Se resolveu, registra a hora de fechamento; se reabriu, remove
-        self.data_fechamento = agora if novo_status == "resolvido" else None
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    chave: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    response_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
