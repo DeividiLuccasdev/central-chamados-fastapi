@@ -209,6 +209,8 @@ Para executar o container:
 docker run -p 8000:8000 --env-file .env central-chamados-fastapi
 ```
 
+O container aplica as migrações pendentes antes de subir a API, então cada deploy no Render já chega com o banco atualizado. Se a migração falhar, a API não sobe e a versão anterior continua no ar.
+
 ---
 
 ## ⚙️ Como executar o projeto localmente

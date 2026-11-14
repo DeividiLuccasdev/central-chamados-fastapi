@@ -23,5 +23,7 @@ USER appuser
 
 EXPOSE 8000
 
+# Aplica as migrações pendentes (Alembic) antes de subir a API; se falharem,
+# o contêiner não inicia e o Render mantém a versão anterior no ar.
 # --proxy-headers: respeita o HTTPS informado pelo proxy do Render
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "python -m scripts.criar_tabelas && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
