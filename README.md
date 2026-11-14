@@ -127,7 +127,7 @@ pytest
 ruff check .
 ```
 
-A suíte tem 106 testes cobrindo a API, as páginas web, as regras de concorrência, a configuração, os scripts e o login de demonstração. Destes, 95 rodam com SQLite em memória, sem precisar de PostgreSQL. Os outros 11 (`testes/test_postgres.py`, marcador `pg`) disparam requisições simultâneas, cada uma com sua própria conexão, contra um PostgreSQL de verdade, e só rodam com `TEST_DATABASE_URL` apontando para um banco descartável. → [como rodar os testes de PostgreSQL](docs/testes.md)
+A suíte tem 110 testes cobrindo a API, as páginas web, as regras de concorrência, a configuração, os scripts e o login de demonstração. Destes, 99 rodam com SQLite em memória, sem precisar de PostgreSQL. Os outros 11 (`testes/test_postgres.py`, marcador `pg`) disparam requisições simultâneas, cada uma com sua própria conexão, contra um PostgreSQL de verdade, e só rodam com `TEST_DATABASE_URL` apontando para um banco descartável. → [como rodar os testes de PostgreSQL](docs/testes.md)
 
 A cada push na `main` e em todo pull request, o GitHub Actions executa o lint, todos os testes (com um serviço PostgreSQL, então os testes `pg` também rodam) e o build da imagem Docker.
 
@@ -171,7 +171,7 @@ testes/                # Testes automatizados (pytest)
 - O login não tem limite de tentativas (rate limit).
 - Chamados não têm comentários, histórico de alterações nem anexos.
 - A demo roda no plano gratuito do Render e hiberna após 15 minutos sem uso.
-- Os dados da demo são compartilhados: qualquer visitante pode criar e alterar chamados e usuários. A conta `demo@example.com` não pode ser inativada e volta ao estado original (ativa, com a senha publicada) a cada deploy.
+- Os dados da demo são compartilhados: qualquer visitante pode criar e alterar chamados e cadastrar usuários. Logado na conta `demo@example.com` não é possível ativar nem inativar usuários, ninguém pode inativar a própria demo e ela volta ao estado original (ativa, com a senha publicada) a cada deploy.
 
 ## Roadmap
 

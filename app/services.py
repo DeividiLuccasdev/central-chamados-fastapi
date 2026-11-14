@@ -35,10 +35,21 @@ class UsuarioProtegido(Exception):
 # (scripts.criar_usuario_demo) e não pode ser inativada por quem visita a demo.
 EMAIL_DEMO = "demo@example.com"
 MENSAGEM_USUARIO_DEMO = "A conta de demonstração não pode ser alterada nem inativada."
+MENSAGEM_DEMO_SEM_GERENCIAR = (
+    "A conta de demonstração não pode ativar nem inativar usuários."
+)
 
 
 def eh_usuario_demo(usuario: models.Usuario | None) -> bool:
     return usuario is not None and models.normalizar_email(usuario.email) == EMAIL_DEMO
+
+
+def verificar_pode_gerenciar_usuarios(ator: models.Usuario | None) -> None:
+    """Sem perfis de acesso, a demo é um usuário comum: sem esta trava, um
+    visitante logado nela poderia inativar a conta real do dono do sistema."""
+
+    if eh_usuario_demo(ator):
+        raise UsuarioProtegido(MENSAGEM_DEMO_SEM_GERENCIAR)
 
 
 # E-mail
@@ -237,6 +248,13 @@ def executar_idempotente(
 
 # Usuários
 
+def ativar_usuario(db: Session, ator: models.Usuario, alvo: models.Usuario) -> None:
+    verificar_pode_gerenciar_usuarios(ator)
+
+    alvo.ativo = True
+    db.commit()
+
+
 def inativar_usuario(db: Session, ator_id: int, alvo_id: int) -> None:
     """Inativa `alvo_id` garantindo que sempre sobra pelo menos um usuário ativo.
 
@@ -249,6 +267,8 @@ def inativar_usuario(db: Session, ator_id: int, alvo_id: int) -> None:
 
     if ator_id == alvo_id:
         raise ValueError("Você não pode inativar seu próprio usuário.")
+
+    verificar_pode_gerenciar_usuarios(db.get(models.Usuario, ator_id))
 
     if eh_usuario_demo(db.get(models.Usuario, alvo_id)):
         raise UsuarioProtegido(MENSAGEM_USUARIO_DEMO)

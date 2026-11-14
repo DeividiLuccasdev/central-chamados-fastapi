@@ -1,6 +1,6 @@
 # Testes
 
-Os testes usam **Pytest** e cobrem a API, as páginas web, as regras de concorrência, a configuração, os scripts e o login de demonstração. A suíte coleta 106 testes: 95 rodam com SQLite em memória, sem precisar de PostgreSQL, e 11 (`testes/test_postgres.py`, marcador `pg`) exigem um PostgreSQL de verdade.
+Os testes usam **Pytest** e cobrem a API, as páginas web, as regras de concorrência, a configuração, os scripts e o login de demonstração. A suíte coleta 110 testes: 99 rodam com SQLite em memória, sem precisar de PostgreSQL, e 11 (`testes/test_postgres.py`, marcador `pg`) exigem um PostgreSQL de verdade.
 
 Para executar os testes e o lint:
 

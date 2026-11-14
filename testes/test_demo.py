@@ -171,13 +171,80 @@ def test_lista_de_usuarios_nao_mostra_inativar_para_a_demo(client, db, logado_we
     assert f"/usuarios/{demo.id}/inativar" not in resposta.text
 
 
-def test_demo_logada_continua_inativando_outros(client, db, criar_usuario):
+@pytest.fixture
+def logado_como_demo(client, db):
     garantir_usuario_demo(db)
-    outro = criar_usuario(email="maria@teste.com", nome="Maria")
 
-    client.post("/login-web", data={"email": EMAIL_DEMO, "senha": SENHA_DEMO})
-    resposta = client.post(f"/usuarios/{outro.id}/inativar", follow_redirects=False)
+    resposta = client.post(
+        "/login-web",
+        data={"email": EMAIL_DEMO, "senha": SENHA_DEMO},
+        follow_redirects=False
+    )
+    assert resposta.status_code == 303
+
+    return usuarios_demo(db)[0]
+
+
+def test_demo_logada_nao_inativa_outros(client, db, criar_usuario, logado_como_demo):
+    dono = criar_usuario()
+
+    resposta = client.post(f"/usuarios/{dono.id}/inativar", follow_redirects=False)
+
+    assert resposta.status_code == 403
+    assert resposta.json()["detail"] == services.MENSAGEM_DEMO_SEM_GERENCIAR
+    db.refresh(dono)
+    assert dono.ativo is True
+
+
+def test_demo_logada_nao_ativa_outros(client, db, criar_usuario, logado_como_demo):
+    inativo = criar_usuario(ativo=False)
+
+    resposta = client.post(f"/usuarios/{inativo.id}/ativar", follow_redirects=False)
+
+    assert resposta.status_code == 403
+    assert resposta.json()["detail"] == services.MENSAGEM_DEMO_SEM_GERENCIAR
+    db.refresh(inativo)
+    assert inativo.ativo is False
+
+
+def test_servico_recusa_demo_como_ator(db, criar_usuario):
+    dono = criar_usuario()
+    inativo = criar_usuario(email="maria@teste.com", nome="Maria", ativo=False)
+    garantir_usuario_demo(db)
+    demo = usuarios_demo(db)[0]
+
+    with pytest.raises(services.UsuarioProtegido):
+        services.inativar_usuario(db, ator_id=demo.id, alvo_id=dono.id)
+
+    with pytest.raises(services.UsuarioProtegido):
+        services.ativar_usuario(db, ator=demo, alvo=inativo)
+
+    db.refresh(dono)
+    db.refresh(inativo)
+    assert dono.ativo is True
+    assert inativo.ativo is False
+
+
+def test_demo_logada_nao_ve_botoes_de_ativar_e_inativar(
+    client, db, criar_usuario, logado_como_demo
+):
+    dono = criar_usuario()
+    inativo = criar_usuario(email="maria@teste.com", nome="Maria", ativo=False)
+
+    resposta = client.get("/usuarios-web")
+
+    assert resposta.status_code == 200
+    assert f"/usuarios/{dono.id}/inativar" not in resposta.text
+    assert f"/usuarios/{inativo.id}/ativar" not in resposta.text
+    assert "Indisponível na demonstração" in resposta.text
+
+
+def test_demo_logada_continua_cadastrando_usuarios(client, db, logado_como_demo):
+    resposta = client.post(
+        "/novo-usuario",
+        data={"nome": "Novo", "email": "novo@teste.com", "senha": "123456"},
+        follow_redirects=False
+    )
 
     assert resposta.status_code == 303
-    db.refresh(outro)
-    assert outro.ativo is False
+    assert services.buscar_usuario_por_email(db, "novo@teste.com") is not None

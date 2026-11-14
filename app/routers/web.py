@@ -342,6 +342,7 @@ def listar_usuarios_web(
         context={
             "usuarios": usuarios,
             "usuario_logado": usuario.id,
+            "pode_gerenciar": not services.eh_usuario_demo(usuario),
             "eh_usuario_demo": services.eh_usuario_demo
         }
     )
@@ -425,7 +426,11 @@ def ativar_usuario(
     usuario: models.Usuario = Depends(obter_usuario_web),
     db: Session = Depends(get_db)
 ):
-    buscar_usuario(db, usuario_id).ativo = True
-    db.commit()
+    alvo = buscar_usuario(db, usuario_id)
+
+    try:
+        services.ativar_usuario(db, ator=usuario, alvo=alvo)
+    except services.UsuarioProtegido as erro:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(erro))
 
     return redirecionar("/usuarios-web")
