@@ -1,78 +1,131 @@
-# 🎫 Central de Chamados - FastAPI
+<div align="center">
+
+# Central de Chamados
+
+**Sistema web e API REST para abertura, acompanhamento e fechamento de chamados, com FastAPI e PostgreSQL.**
 
 [![CI](https://github.com/DeividiLuccasdev/central-chamados-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/DeividiLuccasdev/central-chamados-fastapi/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.141-009688?logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
 
-Sistema web para gerenciamento de chamados desenvolvido com **Python, FastAPI e PostgreSQL**.
-
-O projeto foi criado com foco em desenvolvimento backend e construção de portfólio, aplicando autenticação, gerenciamento de usuários, filtros, pesquisa, controle de chamados, segurança, testes e containerização com Docker.
-
----
-
-## 🌐 Sistema Online
-
 [![Acessar Sistema](https://img.shields.io/badge/Acessar%20Sistema-Online-success?style=for-the-badge)](https://central-chamados-fastapi.onrender.com/login-web)
 
-> ⏳ **O primeiro acesso pode demorar de 30 a 60 segundos.** A aplicação usa o plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso. Depois que ele acorda, tudo responde normalmente.
+[**Sistema online**](https://central-chamados-fastapi.onrender.com/login-web) · [API (Swagger)](https://central-chamados-fastapi.onrender.com/docs) · [GitHub](https://github.com/DeividiLuccasdev)
 
----
+<img src="screenshots/Captura0.png" alt="Central de Chamados" width="900">
 
-## 🚀 Funcionalidades
+</div>
 
-- Login de usuários
-- Controle de sessão
-- Cadastro de usuários
-- Ativação e inativação de usuários
-- Proteção contra inativar a própria conta
-- Cadastro de chamados
-- Listagem de chamados
-- Visualização de detalhes
-- Alteração de status
-- Filtro por status
-- Filtro por prioridade
-- Pesquisa por título
-- Autocomplete na pesquisa
-- Dashboard com indicadores
-- Validação de senha
-- Registro de data de atualização e de fechamento dos chamados
-- API REST protegida com JWT e documentada com OpenAPI (Swagger)
+> O primeiro acesso pode demorar de 30 a 60 segundos. A aplicação usa o plano gratuito do Render, que "adormece" o servidor após 15 minutos sem uso. Depois que ele acorda, tudo responde normalmente.
 
----
+## Sobre
 
-## 🛠️ Tecnologias utilizadas
+A Central de Chamados é um sistema de help desk: usuários autenticados abrem chamados, acompanham o andamento e os resolvem, pela interface web ou pela API REST. As duas portas de entrada usam as mesmas regras de negócio.
 
-### Backend
-- Python
-- FastAPI
-- SQLAlchemy
-- Pydantic
-- JWT
-- Argon2
+O foco está no que costuma quebrar quando várias pessoas usam o sistema ao mesmo tempo: **duas alterações de status simultâneas, cadastros duplicados, envios repetidos do mesmo formulário e mudanças de schema em produção**. Essas garantias são testadas contra um PostgreSQL de verdade no CI.
 
-### Banco de dados
-- PostgreSQL
-- Neon PostgreSQL
+Projeto de portfólio, criado para praticar e demonstrar Python, FastAPI, APIs REST, PostgreSQL, autenticação, segurança, SQLAlchemy, desenvolvimento web, testes, Git, Docker e deploy em nuvem.
 
-### Frontend
-- Jinja2
-- HTML5
-- CSS3
-- JavaScript
+## Funcionalidades
 
-### DevOps e ferramentas
-- Docker
-- Render
-- Pytest
-- Ruff
-- GitHub Actions (CI)
-- Git
-- GitHub
+| | |
+| --- | --- |
+| **Chamados** | Cadastro, listagem, detalhes e alteração de status. Cada chamado tem título, descrição, prioridade, status, usuário responsável e datas de criação, última atualização e fechamento. |
+| **Pesquisa e filtros** | Pesquisa por título com autocomplete (sugestões conforme o usuário digita) e filtros por status e prioridade. |
+| **Dashboard** | Total de chamados, abertos, em andamento e resolvidos, além dos chamados mais recentes. |
+| **Usuários** | Cadastro, ativação e inativação, status da conta e proteção contra inativar a própria conta. Senhas com hash Argon2 e tamanho mínimo validado. |
+| **Autenticação** | Login com sessão na interface web e JWT na API. Usuários inativados perdem a sessão e o token. |
+| **API REST** | Rotas protegidas por JWT, documentadas com OpenAPI (Swagger), com paginação e abertura idempotente de chamados. → [rotas](docs/api.md) |
+| **Concorrência** | Controle otimista no status, e-mail único sem diferenciar maiúsculas e garantia de pelo menos um usuário ativo. → [detalhes](docs/concorrencia.md) |
 
----
+<table>
+  <tr>
+    <td width="50%"><img src="screenshots/Captura1.png" alt="Dashboard"></td>
+    <td width="50%"><img src="screenshots/captura%202.png" alt="Chamados"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Dashboard</sub></td>
+    <td align="center"><sub>Chamados</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="screenshots/Captura%203.png" alt="Usuários"></td>
+    <td width="50%"><img src="screenshots/Captura%204.png" alt="Outra tela do sistema"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Usuários</sub></td>
+    <td align="center"><sub>Outra tela do sistema</sub></td>
+  </tr>
+</table>
 
-## 🗂️ Estrutura do projeto
+## Arquitetura
+
+```mermaid
+flowchart LR
+    WEB["Navegador<br/>Jinja2 · HTML · CSS · JS"] -->|cookie de sessão| WR["routers/web.py"]
+    CLI["Cliente da API"] -->|JWT Bearer| AR["routers/api.py"]
+    WR --> SVC["services.py<br/>regras com concorrência"]
+    AR --> SVC
+    SVC -->|SQLAlchemy| PG[("PostgreSQL<br/>usuários · chamados<br/>idempotency_keys")]
+    MIG["Alembic<br/>no início do contêiner"] --> PG
+```
+
+Interface web e API são servidas pela mesma aplicação FastAPI. As regras que precisam ser seguras com requisições simultâneas ficam em `app/services.py` e são chamadas pelos dois routers.
+
+## Decisões técnicas
+
+- **Controle otimista em vez de "o último a gravar vence".** Cada chamado tem uma `versao` e a alteração de status é um `UPDATE` condicional (`WHERE status = ... AND versao = ...`). Se outra pessoa mudou o chamado entre a leitura e a escrita, nenhuma linha é atualizada e a resposta é `409`, em vez de apagar a alteração alheia. Uma tabela de transições impede que um formulário antigo reabra um chamado resolvido.
+- **Unicidade garantida pelo banco, não por consulta prévia.** O e-mail é normalizado e protegido por um índice único em `lower(email)`. A consulta antes do `INSERT` só gera a mensagem amigável; quando dois cadastros chegam juntos, o índice decide e o segundo recebe `409`, nunca `500`.
+- **Idempotência na abertura de chamados.** Com `Idempotency-Key`, a chave, o hash SHA-256 do conteúdo e a resposta são gravados no mesmo commit do chamado. Repetir a requisição devolve o mesmo chamado; reutilizar a chave com outro conteúdo retorna `422`. O formulário web envia uma chave de uso único e desabilita o botão após o envio, então um duplo clique não cria dois chamados.
+- **Trava pessimista onde a regra envolve várias linhas.** "Sempre há um usuário ativo" não cabe num `UPDATE` condicional de uma linha só: a inativação trava os usuários ativos com `SELECT ... FOR UPDATE`, em ordem de id para evitar deadlock.
+- **Datas pelo relógio do banco.** Atualização e fechamento usam `now()` do banco, o mesmo relógio de `data_criacao`, para que todas as datas de um chamado venham da mesma fonte.
+- **Migrações versionadas e aplicadas no deploy.** O schema é versionado com Alembic e o contêiner roda `scripts.criar_tabelas` antes do uvicorn. Se a migração falhar, a API não sobe e o Render mantém a versão anterior no ar. Bancos criados antes do Alembic são reconhecidos e marcados na revisão inicial.
+- **Configuração que falha cedo.** A aplicação não sobe sem `JWT_SECRET_KEY`; o cookie de sessão usa `SameSite=Lax` e passa a `HTTPS only` automaticamente no Render. `.env` fica fora do Git e da imagem Docker, e o contêiner roda sem usuário root.
+
+## Stack
+
+| Camada | Tecnologias |
+| --- | --- |
+| Backend | Python, FastAPI, SQLAlchemy 2, Pydantic, pydantic-settings, Alembic |
+| Autenticação | JWT (PyJWT), sessões (Starlette), Argon2 (pwdlib) |
+| Banco de dados | PostgreSQL (Neon em produção), SQLite em memória nos testes rápidos |
+| Frontend | Jinja2, HTML5, CSS3 e JavaScript |
+| Qualidade | Pytest, Ruff, GitHub Actions (CI) |
+| Infra | Docker, Render, Git e GitHub |
+
+## Como rodar
+
+Pré-requisitos: Python 3.11 ou superior e um PostgreSQL acessível.
+
+```bash
+pip install -r requirements-dev.txt
+cp .env.example .env                 # configure JWT_SECRET_KEY e o banco
+python -m scripts.criar_tabelas      # aplica as migrações (Alembic)
+python -m scripts.criar_usuario --email voce@exemplo.com --nome "Seu Nome"
+uvicorn app.main:app --reload
+```
+
+Acesse http://127.0.0.1:8000/login-web. A documentação da API fica em http://127.0.0.1:8000/docs.
+
+O passo a passo completo (ambiente virtual, migração de bancos antigos, verificação de conexão) está em [execução local](docs/execucao-local.md), e as variáveis em [configuração](docs/configuracao.md). Para rodar com Docker:
+
+```bash
+docker build -t central-chamados-fastapi .
+docker run -p 8000:8000 --env-file .env central-chamados-fastapi
+```
+
+## Testes
+
+```bash
+pytest
+ruff check .
+```
+
+A suíte tem 90 testes cobrindo a API, as páginas web, as regras de concorrência, a configuração e os scripts. Destes, 80 rodam com SQLite em memória, sem precisar de PostgreSQL. Os outros 10 (`testes/test_postgres.py`, marcador `pg`) disparam requisições simultâneas, cada uma com sua própria conexão, contra um PostgreSQL de verdade, e só rodam com `TEST_DATABASE_URL` apontando para um banco descartável. → [como rodar os testes de PostgreSQL](docs/testes.md)
+
+A cada push na `main` e em todo pull request, o GitHub Actions executa o lint, todos os testes (com um serviço PostgreSQL, então os testes `pg` também rodam) e o build da imagem Docker.
+
+## Estrutura
 
 ```text
 app/
@@ -91,277 +144,35 @@ app/
 │   └── web.py         # Páginas web
 ├── templates/         # HTML (layout base + páginas)
 └── static/            # CSS
+docs/                  # Documentação detalhada
 migracoes/             # Migrações do banco (Alembic)
 scripts/               # Migração das tabelas, usuários e teste de conexão
 testes/                # Testes automatizados (pytest)
 ```
 
----
+## Documentação
 
-## 📊 Dashboard
+- [API REST](docs/api.md): autenticação, rotas, alteração segura de status e erros
+- [Concorrência e idempotência](docs/concorrencia.md): regras e como são testadas
+- [Execução local](docs/execucao-local.md) e [variáveis de ambiente](docs/configuracao.md)
+- [Docker e deploy](docs/docker-e-deploy.md): imagem, migrações no início do contêiner, Render e Neon
+- [Testes](docs/testes.md): suítes, PostgreSQL descartável e CI
 
-O sistema possui um dashboard com indicadores de:
+## Limitações conhecidas
 
-- Total de chamados
-- Chamados abertos
-- Chamados em andamento
-- Chamados resolvidos
+- Não há perfis de acesso: qualquer usuário logado pode cadastrar, ativar e inativar outros usuários.
+- Não há recuperação de senha pelo sistema; a redefinição é feita pelo script `scripts.criar_usuario`, com acesso ao servidor.
+- O login não tem limite de tentativas (rate limit).
+- Chamados não têm comentários, histórico de alterações nem anexos.
+- A demo roda no plano gratuito do Render e hiberna após 15 minutos sem uso.
 
-Também apresenta os chamados mais recentes cadastrados no sistema.
+## Roadmap
 
----
+- [ ] Perfis de acesso (administrador e atendente)
+- [ ] Histórico de alterações e comentários nos chamados
+- [ ] Limite de tentativas de login
+- [ ] Recuperação de senha por e-mail
 
-## 👤 Gerenciamento de usuários
+## Autor
 
-O módulo de usuários permite:
-
-- Cadastrar novos usuários
-- Ativar usuários
-- Inativar usuários
-- Visualizar o status da conta
-- Impedir que o usuário logado inative a própria conta
-
-As senhas são armazenadas utilizando **hash Argon2**.
-
----
-
-## 🎫 Gerenciamento de chamados
-
-Cada chamado possui:
-
-- Título
-- Descrição
-- Prioridade
-- Status
-- Usuário responsável
-- Data de criação
-- Data da última atualização
-- Data de fechamento
-
-Os chamados podem ser pesquisados e filtrados por:
-
-- Título
-- Status
-- Prioridade
-
-A pesquisa possui **autocomplete**, exibindo sugestões conforme o usuário digita.
-
----
-
-## 🔐 Segurança
-
-O projeto possui:
-
-- Hash de senhas com Argon2
-- Autenticação JWT para a API
-- Sessões para a interface web
-- Rotas protegidas
-- Validação de usuários ativos (usuários inativados perdem a sessão e o token)
-- Validação de tamanho mínimo de senha
-- Proteção contra inativação da própria conta
-- Variáveis sensíveis armazenadas em `.env`
-- `.env` protegido pelo `.gitignore`
-- `.env` excluído também da imagem Docker
-- Aplicação não sobe sem `JWT_SECRET_KEY` configurada
-- Cookie de sessão com `SameSite=Lax` e `HTTPS only` ativado automaticamente no Render
-- Container executado sem usuário root
-
-### Concorrência e idempotência
-
-- **Status com controle otimista**: cada chamado tem uma `versao`. A alteração de status é um `UPDATE` condicional (`WHERE status = ... AND versao = ...`); se outra pessoa alterou o chamado nesse meio-tempo, a resposta é **409** em vez de sobrescrever.
-- **Transições permitidas**: `aberto ⇄ em andamento`, `aberto/em andamento → resolvido` e `resolvido → aberto` (reabertura explícita). Um formulário antigo pedindo "em andamento" não reabre um chamado resolvido.
-- **Datas pelo relógio do banco** (`now()`), o mesmo usado em `data_criacao`.
-- **E-mail único sem diferenciar maiúsculas**: gravado em minúsculas e protegido por um índice único em `lower(email)`. Dois cadastros simultâneos resultam em um **201** e um **409**, nunca em erro 500.
-- **Abertura de chamado idempotente**: com o cabeçalho `Idempotency-Key`, repetir a requisição devolve o mesmo chamado; a mesma chave com outro conteúdo retorna **422**. O formulário web envia uma chave de uso único e desabilita o botão após o envio.
-- **Sempre há um usuário ativo**: a inativação trava as linhas dos usuários ativos (`SELECT ... FOR UPDATE`), então os dois últimos ativos não conseguem se inativar ao mesmo tempo.
-
----
-
-## 🖼️ Screenshots
-
-### Interface do sistema
-
-![Central de Chamados](screenshots/Captura0.png)
-
-![Dashboard](screenshots/Captura1.png)
-
-![Chamados](screenshots/captura%202.png)
-
-![Usuários](screenshots/Captura%203.png)
-
-![Outra tela do sistema](screenshots/Captura%204.png)
-
----
-
-## 🐳 Docker
-
-O projeto possui suporte a Docker.
-
-Para criar a imagem:
-
-```bash
-docker build -t central-chamados-fastapi .
-```
-
-Para executar o container:
-
-```bash
-docker run -p 8000:8000 --env-file .env central-chamados-fastapi
-```
-
-O container aplica as migrações pendentes antes de subir a API, então cada deploy no Render já chega com o banco atualizado. Se a migração falhar, a API não sobe e a versão anterior continua no ar.
-
----
-
-## ⚙️ Como executar o projeto localmente
-
-Clone o repositório:
-
-```bash
-git clone https://github.com/DeividiLuccasdev/central-chamados-fastapi.git
-```
-
-Entre na pasta:
-
-```bash
-cd central-chamados-fastapi
-```
-
-Crie um ambiente virtual:
-
-```bash
-python -m venv .venv
-```
-
-Ative o ambiente virtual no Windows:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-Instale as dependências (as de desenvolvimento incluem pytest e ruff):
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-Crie um arquivo `.env` baseado no `.env.example` e configure as variáveis necessárias.
-
-Crie (ou atualize) as tabelas no banco aplicando as migrações:
-
-```bash
-python -m scripts.criar_tabelas
-```
-
-> As tabelas são versionadas com **Alembic** (pasta `migracoes/`). Bancos criados antes das migrações são reconhecidos automaticamente: a revisão inicial é marcada como aplicada e só as novas rodam. Se a migração avisar que há e-mails repetidos variando só maiúsculas, unifique esses cadastros e rode de novo.
-
-Crie o primeiro usuário (a senha é pedida no terminal):
-
-```bash
-python -m scripts.criar_usuario --email voce@exemplo.com --nome "Seu Nome"
-```
-
-> O mesmo comando redefine a senha de um usuário que já existe.
-
-Inicie o servidor:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Acesse:
-
-```text
-http://127.0.0.1:8000/login-web
-```
-
-Documentação da API:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-## 🔧 Variáveis de ambiente
-
-| Variável | Obrigatória | Descrição |
-|---|---|---|
-| `JWT_SECRET_KEY` | Sim | Chave usada para assinar os tokens JWT e o cookie de sessão |
-| `DATABASE_URL` | Não | URL completa do banco (Neon / Render). Tem prioridade sobre as variáveis `DB_*` |
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Não | Dados do banco local |
-| `JWT_EXPIRACAO_MINUTOS` | Não | Validade do token (padrão: 60) |
-| `SESSION_HTTPS_ONLY` | Não | Cookie de sessão só via HTTPS. Se não for informada, é ativada automaticamente no Render |
-
----
-
-## 🔌 API REST
-
-Faça login em `POST /login` e envie o token recebido no cabeçalho `Authorization: Bearer <token>`.
-
-| Método | Rota | Descrição |
-|---|---|---|
-| `POST` | `/login` | Gera o token de acesso |
-| `GET` | `/perfil` | Dados do usuário autenticado |
-| `POST` | `/usuarios` | Cadastra um usuário |
-| `GET` | `/chamados` | Lista chamados (filtros: `status`, `prioridade`; paginação: `limite`, `deslocamento`) |
-| `POST` | `/chamados` | Abre um chamado (aceita o cabeçalho opcional `Idempotency-Key`) |
-| `GET` | `/chamados/{id}` | Detalhes de um chamado |
-| `PATCH` | `/chamados/{id}/status` | Altera o status (`aberto`, `em andamento`, `resolvido`); aceita `status_atual` e `versao` opcionais e retorna `409` se o chamado mudou |
-| `GET` | `/health` | Verificação de saúde da aplicação |
-
-Exemplo de alteração segura de status (o cliente informa o que viu):
-
-```json
-{"status": "resolvido", "status_atual": "em andamento", "versao": 2}
-```
-
----
-
-## 🧪 Testes
-
-O projeto possui testes automatizados utilizando **Pytest**, cobrindo a API e as páginas web. A maior parte usa um banco SQLite em memória, então não precisa de PostgreSQL.
-
-Para executar os testes e o lint:
-
-```bash
-pytest
-ruff check .
-```
-
-Os testes de concorrência (`testes/test_postgres.py`, marcados com `pg`) disparam requisições simultâneas, cada uma com sua própria conexão, contra um **PostgreSQL de verdade**. Eles só rodam com `TEST_DATABASE_URL` apontando para um banco descartável (o schema é apagado e recriado pelas migrações):
-
-```bash
-docker run -d --name pg-teste -e POSTGRES_PASSWORD=postgres -p 5433:5432 postgres:17
-TEST_DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5433/postgres pytest -m pg
-```
-
-A cada push e pull request, o **GitHub Actions** executa o lint, todos os testes (com um serviço PostgreSQL) e o build da imagem Docker.
-
----
-
-## ☁️ Deploy
-
-A aplicação está publicada utilizando:
-
-- **Render** para hospedagem da aplicação
-- **Neon PostgreSQL** para o banco de dados em produção
-- **Docker** para containerização
-
-🌐 [Acessar aplicação online](https://central-chamados-fastapi.onrender.com/login-web)
-
----
-
-## 👨‍💻 Autor
-
-**Deividi Luccas**
-
-- GitHub: [DeividiLuccasdev](https://github.com/DeividiLuccasdev)
-
----
-
-## 📚 Objetivo do projeto
-
-Projeto desenvolvido para praticar e demonstrar conhecimentos em:
-
-**Python, FastAPI, APIs REST, PostgreSQL, autenticação, segurança, SQLAlchemy, desenvolvimento web, testes, Git, Docker e deploy em nuvem.**
+**Deividi Luccas** · [GitHub](https://github.com/DeividiLuccasdev)
