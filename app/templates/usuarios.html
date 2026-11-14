@@ -75,6 +75,14 @@
 
     <strong>Sua conta</strong>
 
+{% elif usuario.ativo and eh_usuario_demo(usuario) %}
+
+    <span>Conta de demonstração</span>
+
+{% elif not pode_gerenciar %}
+
+    <span>Indisponível na demonstração</span>
+
 {% elif usuario.ativo %}
 
     <form method="POST"

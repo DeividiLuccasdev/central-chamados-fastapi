@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from app import models, services
-from app.core.security import criar_token, gerar_hash_senha
+from app.core.security import criar_token, gerar_hash_senha, verificar_senha
 from app.main import app
 
 pytestmark = pytest.mark.pg
@@ -244,3 +244,23 @@ def test_migracoes_batem_com_os_modelos(pg, pg_engine):
         diferencas = compare_metadata(MigrationContext.configure(conexao), Base.metadata)
 
     assert diferencas == []
+
+
+# Usuário de demonstração
+
+def test_dois_conteineres_criando_a_demo_ao_mesmo_tempo(pg, paralelo, sincronizar):
+    from scripts.criar_usuario_demo import EMAIL_DEMO, SENHA_DEMO, garantir_usuario_demo
+
+    # Os dois passam pela consulta prévia antes de qualquer insert
+    sincronizar(services, "email_em_uso")
+
+    def criar():
+        with pg() as db:
+            return garantir_usuario_demo(db)
+
+    assert sorted(paralelo(criar, criar)) == [False, True]
+
+    with pg() as db:
+        usuario = services.buscar_usuario_por_email(db, EMAIL_DEMO)
+        assert usuario.ativo is True
+        assert verificar_senha(SENHA_DEMO, usuario.senha)

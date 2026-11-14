@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     session_https_only: bool | None = None
     render: bool = False
 
+    # Login público de demonstração (scripts.criar_usuario_demo). Criado só no
+    # Render ou com CRIAR_USUARIO_DEMO=true, para não poluir bancos locais.
+    criar_usuario_demo: bool = False
+
+    @property
+    def usuario_demo_habilitado(self) -> bool:
+        return self.render or self.criar_usuario_demo
+
     @property
     def cookie_https_only(self) -> bool:
         if self.session_https_only is not None:
