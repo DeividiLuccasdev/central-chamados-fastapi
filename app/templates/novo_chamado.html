@@ -18,7 +18,14 @@
             <form
                 method="POST"
                 action="/novo-chamado"
+                id="form-novo-chamado"
             >
+
+                <input
+                    type="hidden"
+                    name="chave_idempotencia"
+                    value="{{ chave_idempotencia }}"
+                >
 
                 <label for="titulo">
                     Título
@@ -75,4 +82,15 @@
             </form>
 
         </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Evita que um duplo clique envie o formulário duas vezes
+    document.getElementById("form-novo-chamado").addEventListener("submit", function () {
+        const botao = this.querySelector("button[type=submit]");
+        botao.disabled = true;
+        botao.textContent = "Criando...";
+    });
+</script>
 {% endblock %}

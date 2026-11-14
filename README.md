@@ -81,7 +81,8 @@ app/
 │   ├── config.py      # Configurações lidas do .env (pydantic-settings)
 │   └── security.py    # Hash de senhas (Argon2) e tokens JWT
 ├── database.py        # Conexão com o banco e sessão do SQLAlchemy
-├── models.py          # Modelos Usuario e Chamado
+├── models.py          # Modelos Usuario, Chamado e ChaveIdempotencia
+├── services.py        # Regras seguras com requisições simultâneas
 ├── schemas.py         # Validação de entrada e saída da API (Pydantic)
 ├── dependencies.py    # Autenticação da API (JWT) e das páginas (sessão)
 ├── templating.py      # Configuração do Jinja2 e filtros
@@ -90,7 +91,8 @@ app/
 │   └── web.py         # Páginas web
 ├── templates/         # HTML (layout base + páginas)
 └── static/            # CSS
-scripts/               # Criação das tabelas, usuários e teste de conexão
+migracoes/             # Migrações do banco (Alembic)
+scripts/               # Migração das tabelas, usuários e teste de conexão
 testes/                # Testes automatizados (pytest)
 ```
 
@@ -164,6 +166,15 @@ O projeto possui:
 - Cookie de sessão com `SameSite=Lax` e `HTTPS only` ativado automaticamente no Render
 - Container executado sem usuário root
 
+### Concorrência e idempotência
+
+- **Status com controle otimista**: cada chamado tem uma `versao`. A alteração de status é um `UPDATE` condicional (`WHERE status = ... AND versao = ...`); se outra pessoa alterou o chamado nesse meio-tempo, a resposta é **409** em vez de sobrescrever.
+- **Transições permitidas**: `aberto ⇄ em andamento`, `aberto/em andamento → resolvido` e `resolvido → aberto` (reabertura explícita). Um formulário antigo pedindo "em andamento" não reabre um chamado resolvido.
+- **Datas pelo relógio do banco** (`now()`), o mesmo usado em `data_criacao`.
+- **E-mail único sem diferenciar maiúsculas**: gravado em minúsculas e protegido por um índice único em `lower(email)`. Dois cadastros simultâneos resultam em um **201** e um **409**, nunca em erro 500.
+- **Abertura de chamado idempotente**: com o cabeçalho `Idempotency-Key`, repetir a requisição devolve o mesmo chamado; a mesma chave com outro conteúdo retorna **422**. O formulário web envia uma chave de uso único e desabilita o botão após o envio.
+- **Sempre há um usuário ativo**: a inativação trava as linhas dos usuários ativos (`SELECT ... FOR UPDATE`), então os dois últimos ativos não conseguem se inativar ao mesmo tempo.
+
 ---
 
 ## 🖼️ Screenshots
@@ -234,11 +245,13 @@ pip install -r requirements-dev.txt
 
 Crie um arquivo `.env` baseado no `.env.example` e configure as variáveis necessárias.
 
-Crie as tabelas no banco:
+Crie (ou atualize) as tabelas no banco aplicando as migrações:
 
 ```bash
 python -m scripts.criar_tabelas
 ```
+
+> As tabelas são versionadas com **Alembic** (pasta `migracoes/`). Bancos criados antes das migrações são reconhecidos automaticamente: a revisão inicial é marcada como aplicada e só as novas rodam. Se a migração avisar que há e-mails repetidos variando só maiúsculas, unifique esses cadastros e rode de novo.
 
 Crie o primeiro usuário (a senha é pedida no terminal):
 
@@ -290,16 +303,22 @@ Faça login em `POST /login` e envie o token recebido no cabeçalho `Authorizati
 | `GET` | `/perfil` | Dados do usuário autenticado |
 | `POST` | `/usuarios` | Cadastra um usuário |
 | `GET` | `/chamados` | Lista chamados (filtros: `status`, `prioridade`; paginação: `limite`, `deslocamento`) |
-| `POST` | `/chamados` | Abre um chamado |
+| `POST` | `/chamados` | Abre um chamado (aceita o cabeçalho opcional `Idempotency-Key`) |
 | `GET` | `/chamados/{id}` | Detalhes de um chamado |
-| `PATCH` | `/chamados/{id}/status` | Altera o status (`aberto`, `em andamento`, `resolvido`) |
+| `PATCH` | `/chamados/{id}/status` | Altera o status (`aberto`, `em andamento`, `resolvido`); aceita `status_atual` e `versao` opcionais e retorna `409` se o chamado mudou |
 | `GET` | `/health` | Verificação de saúde da aplicação |
+
+Exemplo de alteração segura de status (o cliente informa o que viu):
+
+```json
+{"status": "resolvido", "status_atual": "em andamento", "versao": 2}
+```
 
 ---
 
 ## 🧪 Testes
 
-O projeto possui testes automatizados utilizando **Pytest**, cobrindo a API e as páginas web. Os testes usam um banco SQLite em memória, então não precisam de PostgreSQL.
+O projeto possui testes automatizados utilizando **Pytest**, cobrindo a API e as páginas web. A maior parte usa um banco SQLite em memória, então não precisa de PostgreSQL.
 
 Para executar os testes e o lint:
 
@@ -308,7 +327,14 @@ pytest
 ruff check .
 ```
 
-A cada push e pull request, o **GitHub Actions** executa o lint, os testes e o build da imagem Docker.
+Os testes de concorrência (`testes/test_postgres.py`, marcados com `pg`) disparam requisições simultâneas, cada uma com sua própria conexão, contra um **PostgreSQL de verdade**. Eles só rodam com `TEST_DATABASE_URL` apontando para um banco descartável (o schema é apagado e recriado pelas migrações):
+
+```bash
+docker run -d --name pg-teste -e POSTGRES_PASSWORD=postgres -p 5433:5432 postgres:17
+TEST_DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5433/postgres pytest -m pg
+```
+
+A cada push e pull request, o **GitHub Actions** executa o lint, todos os testes (com um serviço PostgreSQL) e o build da imagem Docker.
 
 ---
 
