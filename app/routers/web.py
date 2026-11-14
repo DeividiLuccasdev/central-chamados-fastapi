@@ -341,7 +341,8 @@ def listar_usuarios_web(
         name="usuarios.html",
         context={
             "usuarios": usuarios,
-            "usuario_logado": usuario.id
+            "usuario_logado": usuario.id,
+            "eh_usuario_demo": services.eh_usuario_demo
         }
     )
 
@@ -410,6 +411,8 @@ def inativar_usuario(
 
     try:
         services.inativar_usuario(db, ator_id=usuario.id, alvo_id=usuario_id)
+    except services.UsuarioProtegido as erro:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(erro))
     except services.Conflito as erro:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(erro))
 

@@ -13,6 +13,12 @@
 
 [**Sistema online**](https://central-chamados-fastapi.onrender.com/login-web) · [API (Swagger)](https://central-chamados-fastapi.onrender.com/docs) · [GitHub](https://github.com/DeividiLuccasdev)
 
+**Acesso de demonstração**
+
+| E-mail | Senha |
+| --- | --- |
+| `demo@example.com` | `Demo@2026` |
+
 <img src="screenshots/Captura0.png" alt="Central de Chamados" width="900">
 
 </div>
@@ -121,7 +127,7 @@ pytest
 ruff check .
 ```
 
-A suíte tem 90 testes cobrindo a API, as páginas web, as regras de concorrência, a configuração e os scripts. Destes, 80 rodam com SQLite em memória, sem precisar de PostgreSQL. Os outros 10 (`testes/test_postgres.py`, marcador `pg`) disparam requisições simultâneas, cada uma com sua própria conexão, contra um PostgreSQL de verdade, e só rodam com `TEST_DATABASE_URL` apontando para um banco descartável. → [como rodar os testes de PostgreSQL](docs/testes.md)
+A suíte tem 106 testes cobrindo a API, as páginas web, as regras de concorrência, a configuração, os scripts e o login de demonstração. Destes, 95 rodam com SQLite em memória, sem precisar de PostgreSQL. Os outros 11 (`testes/test_postgres.py`, marcador `pg`) disparam requisições simultâneas, cada uma com sua própria conexão, contra um PostgreSQL de verdade, e só rodam com `TEST_DATABASE_URL` apontando para um banco descartável. → [como rodar os testes de PostgreSQL](docs/testes.md)
 
 A cada push na `main` e em todo pull request, o GitHub Actions executa o lint, todos os testes (com um serviço PostgreSQL, então os testes `pg` também rodam) e o build da imagem Docker.
 
@@ -146,7 +152,7 @@ app/
 └── static/            # CSS
 docs/                  # Documentação detalhada
 migracoes/             # Migrações do banco (Alembic)
-scripts/               # Migração das tabelas, usuários e teste de conexão
+scripts/               # Migração das tabelas, usuários (inclusive o de demonstração) e teste de conexão
 testes/                # Testes automatizados (pytest)
 ```
 
@@ -165,6 +171,7 @@ testes/                # Testes automatizados (pytest)
 - O login não tem limite de tentativas (rate limit).
 - Chamados não têm comentários, histórico de alterações nem anexos.
 - A demo roda no plano gratuito do Render e hiberna após 15 minutos sem uso.
+- Os dados da demo são compartilhados: qualquer visitante pode criar e alterar chamados e usuários. A conta `demo@example.com` não pode ser inativada e volta ao estado original (ativa, com a senha publicada) a cada deploy.
 
 ## Roadmap
 

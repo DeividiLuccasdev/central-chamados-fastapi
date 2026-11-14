@@ -24,6 +24,7 @@ USER appuser
 EXPOSE 8000
 
 # Aplica as migrações pendentes (Alembic) antes de subir a API; se falharem,
-# o contêiner não inicia e o Render mantém a versão anterior no ar.
+# o contêiner não inicia e o Render mantém a versão anterior no ar. Em seguida
+# cria/restaura o login de demonstração (só no Render ou com CRIAR_USUARIO_DEMO=true).
 # --proxy-headers: respeita o HTTPS informado pelo proxy do Render
-CMD ["sh", "-c", "python -m scripts.criar_tabelas && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "python -m scripts.criar_tabelas && python -m scripts.criar_usuario_demo && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]

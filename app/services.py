@@ -25,6 +25,22 @@ class ChaveIdempotenciaReutilizada(Exception):
     """A mesma Idempotency-Key foi enviada com outro conteúdo (HTTP 422)."""
 
 
+class UsuarioProtegido(Exception):
+    """A operação deixaria o login de demonstração inutilizável (HTTP 403)."""
+
+
+# Conta de demonstração
+
+# Login público divulgado no README. A conta é recriada a cada deploy
+# (scripts.criar_usuario_demo) e não pode ser inativada por quem visita a demo.
+EMAIL_DEMO = "demo@example.com"
+MENSAGEM_USUARIO_DEMO = "A conta de demonstração não pode ser alterada nem inativada."
+
+
+def eh_usuario_demo(usuario: models.Usuario | None) -> bool:
+    return usuario is not None and models.normalizar_email(usuario.email) == EMAIL_DEMO
+
+
 # E-mail
 
 def buscar_usuario_por_email(db: Session, email: str) -> models.Usuario | None:
@@ -233,6 +249,9 @@ def inativar_usuario(db: Session, ator_id: int, alvo_id: int) -> None:
 
     if ator_id == alvo_id:
         raise ValueError("Você não pode inativar seu próprio usuário.")
+
+    if eh_usuario_demo(db.get(models.Usuario, alvo_id)):
+        raise UsuarioProtegido(MENSAGEM_USUARIO_DEMO)
 
     ativos = set(db.scalars(
         select(models.Usuario.id)

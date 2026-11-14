@@ -18,6 +18,8 @@ A imagem usa `python:3.14-slim`, roda com um usuário sem privilégios de root (
 
 O container aplica as migrações pendentes (`python -m scripts.criar_tabelas`) antes de subir a API, então cada deploy no Render já chega com o banco atualizado. Se a migração falhar, a API não sobe e a versão anterior continua no ar.
 
+Em seguida, `python -m scripts.criar_usuario_demo` cria ou restaura o login de demonstração publicado no README (só no Render ou com `CRIAR_USUARIO_DEMO=true`): se a conta já existir, ela é reativada e a senha volta ao valor conhecido. Uma falha nesse passo é registrada no log, mas não impede a API de subir.
+
 O uvicorn roda com `--proxy-headers`, para respeitar o HTTPS informado pelo proxy do Render, e escuta na porta da variável `PORT` (padrão: 8000).
 
 ## Deploy
